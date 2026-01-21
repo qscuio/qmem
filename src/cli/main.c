@@ -8,7 +8,7 @@
 #include <getopt.h>
 #include <unistd.h>
 
-#define DEFAULT_SOCKET "/tmp/qmem.sock"
+#define DEFAULT_SOCKET "/run/qmem.sock"
 
 static void print_usage(const char *prog) {
     printf("Usage: %s [options] <command>\n\n", prog);

@@ -15,7 +15,7 @@ void config_init_defaults(qmem_config_t *cfg) {
     cfg->interval_sec = 10;
     cfg->foreground = false;
     strncpy(cfg->pidfile, "/run/qmem.pid", sizeof(cfg->pidfile) - 1);
-    strncpy(cfg->socket_path, "/tmp/qmem.sock", sizeof(cfg->socket_path) - 1);
+    strncpy(cfg->socket_path, "/run/qmem.sock", sizeof(cfg->socket_path) - 1);
     cfg->log_level = QMEM_LOG_INFO;
     
     cfg->proc_min_delta_kb = 1024;
