@@ -1,4 +1,4 @@
-qmem (1.0.7-1) unstable; urgency=medium
+qmem (1.0.8-1) unstable; urgency=medium
 
   * Initial release
   * 10 monitoring services: meminfo, slabinfo, procmem, heapmon, vmstat,

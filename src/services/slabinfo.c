@@ -235,7 +235,9 @@ qmem_service_t slabinfo_service = {
     .collect_count = 0,
 };
 
+#ifndef NO_PLUGIN_DEFINE
 QMEM_PLUGIN_DEFINE("slabinfo", "1.0", "Slab cache monitor", slabinfo_service);
+#endif
 
 int slabinfo_get_top_growers(slab_entry_t *entries, int max_entries) {
     int n = g_slabinfo.grower_count;

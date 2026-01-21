@@ -228,7 +228,9 @@ qmem_service_t heapmon_service = {
     .collect_count = 0,
 };
 
+#ifndef NO_PLUGIN_DEFINE
 QMEM_PLUGIN_DEFINE("heapmon", "1.0", "Heap memory analysis", heapmon_service);
+#endif
 
 void heapmon_set_targets(pid_t *pids, int count) {
     if (count > MAX_TARGETS) count = MAX_TARGETS;
