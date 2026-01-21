@@ -72,10 +72,36 @@ cd /tmp/qmem_install
 echo "Installing binaries to /usr/local/bin..."
 install -m 755 bin/qmemd /usr/local/bin/
 install -m 755 bin/qmemctl /usr/local/bin/
+install -m 755 bin/qmem_test_tool /usr/local/bin/
 
 echo "Installing plugins to /usr/lib/qmem/plugins..."
 mkdir -p /usr/lib/qmem/plugins
 install -m 755 plugins/*.so /usr/lib/qmem/plugins/
+
+echo "Installing test tools to /usr/lib/qmem/tests..."
+mkdir -p /usr/lib/qmem/tests
+install -m 644 tests/qmem_test_kmod.c /usr/lib/qmem/tests/
+install -m 644 tests/Makefile /usr/lib/qmem/tests/
+install -m 644 tests/README.md /usr/lib/qmem/tests/
+
+# Try to build kernel module if headers are available
+KVER=$(uname -r)
+if [ -d "/lib/modules/$KVER/build" ]; then
+    echo "Building kernel module for $KVER..."
+    cd /usr/lib/qmem/tests
+    if make 2>/dev/null; then
+        echo "Kernel module built successfully: qmem_test_kmod.ko"
+        echo "To load: sudo insmod /usr/lib/qmem/tests/qmem_test_kmod.ko"
+    else
+        echo "Kernel module build failed (missing dependencies?)"
+        echo "To build manually: cd /usr/lib/qmem/tests && make"
+    fi
+    cd - >/dev/null
+else
+    echo "Kernel headers not found for $KVER"
+    echo "To build kernel module manually after installing headers:"
+    echo "  cd /usr/lib/qmem/tests && make"
+fi
 
 echo "Installing configuration to /etc/qmem..."
 if [ ! -f /etc/qmem/qmem.conf ]; then

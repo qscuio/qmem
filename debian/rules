@@ -28,6 +28,8 @@ override_dh_auto_install:
 	install -m 644 tests/qmem_test_kmod.c $(CURDIR)/debian/qmem/usr/lib/qmem/tests/
 	install -m 644 tests/Makefile.kmod $(CURDIR)/debian/qmem/usr/lib/qmem/tests/Makefile
 	install -m 644 tests/README.md $(CURDIR)/debian/qmem/usr/lib/qmem/tests/
+	# Try to build kernel module (best effort)
+	-cd $(CURDIR)/debian/qmem/usr/lib/qmem/tests && make 2>/dev/null || true
 	
 	# Install plugins package
 	install -d $(CURDIR)/debian/qmem-plugins/usr/lib/qmem/plugins
