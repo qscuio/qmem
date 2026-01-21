@@ -18,6 +18,7 @@ typedef struct {
     int64_t heap_size_kb;
     int64_t heap_rss_kb;
     int64_t heap_pd_kb;
+    int64_t rss_kb;  /* Total RSS for initial tracking */
 } heap_data_t;
 
 typedef struct {
@@ -109,7 +110,8 @@ static heap_data_t *find_previous(heapmon_priv_t *priv, pid_t pid) {
 
 /* Find or create initial (baseline) entry for a PID */
 static heap_data_t *find_or_create_initial(heapmon_priv_t *priv, pid_t pid,
-                                            int64_t size_kb, int64_t rss_kb, int64_t pd_kb) {
+                                            int64_t size_kb, int64_t heap_rss_kb, int64_t pd_kb,
+                                            int64_t total_rss_kb) {
     /* Search for existing entry */
     for (int i = 0; i < priv->initial_count; i++) {
         if (priv->initial[i].pid == pid) {
@@ -122,8 +124,9 @@ static heap_data_t *find_or_create_initial(heapmon_priv_t *priv, pid_t pid,
         heap_data_t *init = &priv->initial[priv->initial_count++];
         init->pid = pid;
         init->heap_size_kb = size_kb;
-        init->heap_rss_kb = rss_kb;
+        init->heap_rss_kb = heap_rss_kb;
         init->heap_pd_kb = pd_kb;
+        init->rss_kb = total_rss_kb;
         return init;
     }
     
@@ -221,20 +224,27 @@ static int heapmon_collect(qmem_service_t *svc) {
             res->rss_delta_kb = pe.rss_delta_kb;
         }
         
-        /* Get or create initial baseline */
-        heap_data_t *init = find_or_create_initial(priv, pid, size_kb, rss_kb, pd_kb);
+        /* Get or create initial baseline - pass total RSS too */
+        heap_data_t *init = find_or_create_initial(priv, pid, size_kb, rss_kb, pd_kb, res->rss_kb);
         if (init) {
             res->initial_heap_rss_kb = init->heap_rss_kb;
-            res->initial_rss_kb = res->rss_kb; /* Will be set on first collect */
-            /* For initial RSS, we need to track it in initial struct as well */
-            /* Use a simple heuristic: if init->heap_pd_kb == 0, it's new, store rss */
-            if (init->heap_pd_kb == pd_kb && init->heap_rss_kb == rss_kb) {
-                /* First time seeing this - initial values are same as current */
-                res->initial_rss_kb = res->rss_kb;
-            }
+            res->initial_rss_kb = init->rss_kb;
         } else {
             res->initial_heap_rss_kb = rss_kb;
             res->initial_rss_kb = res->rss_kb;
+        }
+    }
+    
+    /* Sort results by total memory increase (rss - initial_rss, descending) */
+    for (int i = 0; i < priv->result_count - 1; i++) {
+        for (int j = i + 1; j < priv->result_count; j++) {
+            int64_t change_i = priv->results[i].rss_kb - priv->results[i].initial_rss_kb;
+            int64_t change_j = priv->results[j].rss_kb - priv->results[j].initial_rss_kb;
+            if (change_j > change_i) {
+                heapmon_entry_t tmp = priv->results[i];
+                priv->results[i] = priv->results[j];
+                priv->results[j] = tmp;
+            }
         }
     }
     

@@ -68,8 +68,37 @@ static void format_delta(char *buf, size_t size, int64_t delta) {
     }
 }
 
+/* Format delta without color codes for alignment, returns sign and value separately */
+static void format_delta_plain(char *buf, size_t size, int64_t delta) {
+    char value[48];
+    int64_t abs_delta = delta < 0 ? -delta : delta;
+    format_kb(value, sizeof(value), abs_delta);
+    
+    if (delta > 0) {
+        snprintf(buf, size, "+%s", value);
+    } else if (delta < 0) {
+        snprintf(buf, size, "-%s", value);
+    } else {
+        snprintf(buf, size, "0");
+    }
+}
+
+/* Print a delta value with color and fixed width */
+static void print_delta_col(int64_t delta, int width) {
+    char plain[64];
+    format_delta_plain(plain, sizeof(plain), delta);
+    
+    if (delta > 0) {
+        printf(RED "%-*s" NC, width, plain);
+    } else if (delta < 0) {
+        printf(GREEN "%-*s" NC, width, plain);
+    } else {
+        printf("%-*s", width, plain);
+    }
+}
+
 static void print_separator(void) {
-    printf("================================================================================\n");
+    printf("============================================================================================================\n");
 }
 
 static void print_json_section(const char *json, const char *key) {
@@ -204,17 +233,20 @@ int cmd_memleak(const char *socket_path) {
              int64_t rss_change = rss - initial_rss;
              int64_t heap_change = heap - initial_heap;
 
-             char s_rss[32], s_init_rss[32], s_rss_chg[32];
-             char s_heap[32], s_init_heap[32], s_heap_chg[32], s_size[32];
+             char s_rss[32], s_init_rss[32];
+             char s_heap[32], s_init_heap[32], s_size[32];
              format_kb(s_rss, sizeof(s_rss), rss);
              format_kb(s_init_rss, sizeof(s_init_rss), initial_rss);
-             format_delta(s_rss_chg, sizeof(s_rss_chg), rss_change);
              format_kb(s_heap, sizeof(s_heap), heap);
              format_kb(s_init_heap, sizeof(s_init_heap), initial_heap);
-             format_delta(s_heap_chg, sizeof(s_heap_chg), heap_change);
              format_kb(s_size, sizeof(s_size), heap_size);
 
-             printf(ROWS_PROC "\n", pid, s_rss, s_init_rss, s_rss_chg, s_heap, s_init_heap, s_heap_chg, s_size, cmd);
+             /* Print row with proper alignment using print_delta_col for colored values */
+             printf("%-8ld %-12s %-12s ", pid, s_rss, s_init_rss);
+             print_delta_col(rss_change, 12);
+             printf("%-12s %-12s ", s_heap, s_init_heap);
+             print_delta_col(heap_change, 12);
+             printf("%-12s %s\n", s_size, cmd);
              
              pos++;
              count++;
@@ -249,13 +281,13 @@ int cmd_memleak(const char *socket_path) {
              int64_t delta = json_get_int(pos, "delta_bytes");
              int64_t objs = json_get_int(pos, "active_objs");
 
-             char s_total[32], s_delta[32];
-             /* format_kb handles KB. For bytes, we might want MB/KB auto logic but format_kb takes KB input. */
-             /* Convert bytes to KB for format_kb */
+             char s_total[32];
              format_kb(s_total, sizeof(s_total), total / 1024);
-             format_delta(s_delta, sizeof(s_delta), delta / 1024);
 
-             printf(ROWS_SLAB "\n", cache, s_total, s_delta, objs);
+             /* Print with proper alignment */
+             printf("%-24s %-12s ", cache, s_total);
+             print_delta_col(delta / 1024, 12);
+             printf("%-12ld\n", (long)objs);
              
              pos++;
              count++;
