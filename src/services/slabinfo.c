@@ -8,6 +8,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <qmem/plugin.h>
 
 #define MAX_SLABS 512
 #define TOP_N 20
@@ -233,6 +234,8 @@ qmem_service_t slabinfo_service = {
     .enabled = true,
     .collect_count = 0,
 };
+
+QMEM_PLUGIN_DEFINE("slabinfo", "1.0", "Slab cache monitor", slabinfo_service);
 
 int slabinfo_get_top_growers(slab_entry_t *entries, int max_entries) {
     int n = g_slabinfo.grower_count;

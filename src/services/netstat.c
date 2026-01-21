@@ -11,6 +11,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
+#include <qmem/plugin.h>
 
 #define MAX_INTERFACES 32
 
@@ -217,6 +218,8 @@ qmem_service_t netstat_service = {
     .enabled = true,
     .collect_count = 0,
 };
+
+QMEM_PLUGIN_DEFINE("netstat", "1.0", "Network interface statistics", netstat_service);
 
 int netstat_get_interfaces(netstat_iface_t *interfaces, int max_interfaces) {
     int n = g_netstat.current_count;

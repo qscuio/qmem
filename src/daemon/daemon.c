@@ -10,6 +10,7 @@
 #include "common/log.h"
 #include "common/json.h"
 
+/* Services are loaded dynamically
 #include "services/meminfo.h"
 #include "services/slabinfo.h"
 #include "services/procmem.h"
@@ -20,6 +21,7 @@
 #include "services/procstat.h"
 #include "services/sockstat.h"
 #include "services/procevent.h"
+*/
 
 #ifdef QMEM_WEB_ENABLED
 #include "web/http_server.h"
@@ -197,7 +199,8 @@ int daemon_init(const qmem_config_t *cfg) {
         return -1;
     }
     
-    /* Register services */
+    /* Services are now loaded dynamically as plugins */
+#if 0
     if (cfg->svc_meminfo) svc_manager_register(&meminfo_service);
     if (cfg->svc_slabinfo) svc_manager_register(&slabinfo_service);
     if (cfg->svc_procmem) svc_manager_register(&procmem_service);
@@ -207,9 +210,9 @@ int daemon_init(const qmem_config_t *cfg) {
     if (cfg->svc_netstat) svc_manager_register(&netstat_service);
     if (cfg->svc_procstat) svc_manager_register(&procstat_service);
     
-    /* Always register these services */
     svc_manager_register(&sockstat_service);
     svc_manager_register(&procevent_service);
+#endif
     
     /* Start IPC server */
     ipc_set_snapshot_callback(get_snapshot_callback);

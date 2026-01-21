@@ -8,6 +8,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <qmem/plugin.h>
 
 typedef struct {
     meminfo_data_t current;
@@ -161,6 +162,8 @@ qmem_service_t meminfo_service = {
     .enabled = true,
     .collect_count = 0,
 };
+
+QMEM_PLUGIN_DEFINE("meminfo", "1.0", "System memory usage monitor", meminfo_service);
 
 const meminfo_data_t *meminfo_get_current(void) {
     return &g_meminfo.current;

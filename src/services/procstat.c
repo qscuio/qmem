@@ -12,6 +12,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <dirent.h>
+#include <qmem/plugin.h>
 #include <ctype.h>
 
 #define MAX_BLOCKED 100
@@ -245,6 +246,8 @@ qmem_service_t procstat_service = {
     .enabled = true,
     .collect_count = 0,
 };
+
+QMEM_PLUGIN_DEFINE("procstat", "1.0", "Process status monitor", procstat_service);
 
 const procstat_summary_t *procstat_get_summary(void) {
     return &g_procstat.summary;

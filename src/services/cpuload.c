@@ -10,6 +10,7 @@
 #include "common/json.h"
 #include <stdio.h>
 #include <stdlib.h>
+#include <qmem/plugin.h>
 #include <string.h>
 #include <dirent.h>
 #include <ctype.h>

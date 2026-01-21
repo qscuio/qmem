@@ -7,6 +7,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <qmem/plugin.h>
 
 typedef struct {
     vmstat_data_t current;
@@ -108,6 +109,8 @@ qmem_service_t vmstat_service = {
     .enabled = true,
     .collect_count = 0,
 };
+
+QMEM_PLUGIN_DEFINE("vmstat", "1.0", "Virtual memory statistics", vmstat_service);
 
 const vmstat_data_t *vmstat_get_current(void) {
     return &g_vmstat.current;

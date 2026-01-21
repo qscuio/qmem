@@ -8,6 +8,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <qmem/plugin.h>
 
 #define MAX_PROCS 4096
 #define TOP_N 12
@@ -263,6 +264,10 @@ qmem_service_t procmem_service = {
     .enabled = true,
     .collect_count = 0,
 };
+
+#ifndef NO_PLUGIN_DEFINE
+QMEM_PLUGIN_DEFINE("procmem", "1.0", "Process memory monitor", procmem_service);
+#endif
 
 int procmem_get_top_growers(procmem_entry_t *entries, int max_entries) {
     int n = g_procmem.grower_count;

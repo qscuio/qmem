@@ -48,14 +48,14 @@ DAEMON := $(BINDIR)/qmemd
 CLI := $(BINDIR)/qmemctl
 
 # Daemon objects (include web if enabled, services linked statically for now)
-DAEMON_ALL_OBJS := $(DAEMON_OBJS) $(SERVICE_OBJS) $(COMMON_OBJS)
+DAEMON_ALL_OBJS := $(DAEMON_OBJS) $(COMMON_OBJS)
 ifeq ($(WEB), 1)
     DAEMON_ALL_OBJS += $(WEB_OBJS)
 endif
 
 .PHONY: all clean install test dirs plugins
 
-all: dirs $(DAEMON) $(CLI)
+all: dirs $(DAEMON) $(CLI) plugins
 
 # Build with plugins as .so files
 plugins: dirs plugin-dirs $(PLUGIN_TARGETS)
@@ -81,8 +81,17 @@ $(BUILDDIR)/%.o: $(SRCDIR)/%.c
 	$(CC) $(CFLAGS) -c -o $@ $<
 
 # Plugin build rule - compile service as shared library
+# Plugin build rule - compile service as shared library
 $(PLUGINDIR)/%.so: $(SRCDIR)/services/%.c $(COMMON_OBJS)
 	$(CC) $(CFLAGS) -fPIC -shared -o $@ $< $(COMMON_OBJS) $(LDFLAGS)
+
+# Procmem object without plugin define for static linking into other plugins
+$(BUILDDIR)/services/procmem_noplugin.o: $(SRCDIR)/services/procmem.c
+	$(CC) $(CFLAGS) -DNO_PLUGIN_DEFINE -fPIC -c -o $@ $<
+
+# Heapmon needs procmem functions
+$(PLUGINDIR)/heapmon.so: $(SRCDIR)/services/heapmon.c $(BUILDDIR)/services/procmem_noplugin.o $(COMMON_OBJS)
+	$(CC) $(CFLAGS) -fPIC -shared -o $@ $^ $(LDFLAGS)
 
 clean:
 	rm -rf $(BUILDDIR) $(BINDIR) $(PLUGINDIR)

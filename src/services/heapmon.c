@@ -8,6 +8,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <qmem/plugin.h>
 
 #define MAX_TARGETS 12
 
@@ -223,9 +224,11 @@ qmem_service_t heapmon_service = {
     .description = "Heap analysis via /proc/pid/smaps",
     .ops = &heapmon_ops,
     .priv = NULL,
-    .enabled = true,
+    .enabled = false,  // Disabled by default as it's expensive
     .collect_count = 0,
 };
+
+QMEM_PLUGIN_DEFINE("heapmon", "1.0", "Heap memory analysis", heapmon_service);
 
 void heapmon_set_targets(pid_t *pids, int count) {
     if (count > MAX_TARGETS) count = MAX_TARGETS;
