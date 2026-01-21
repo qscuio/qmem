@@ -123,27 +123,27 @@ static bool collect_callback(pid_t pid, void *userdata) {
     
     insert_hash(priv->current, entry);
     
+    int64_t rss_delta = 0;
+    int64_t data_delta = 0;
+    
     /* Calculate delta if we have previous data */
     if (priv->has_previous) {
         proc_entry_t *prev = find_in_hash(priv->previous, pid);
         if (prev) {
-            int64_t rss_delta = rss_kb - prev->rss_kb;
-            int64_t data_delta = data_kb - prev->data_kb;
-            int64_t abs_rss = rss_delta < 0 ? -rss_delta : rss_delta;
-            int64_t abs_data = data_delta < 0 ? -data_delta : data_delta;
-            
-            if (abs_rss >= MIN_DELTA_KB || abs_data >= MIN_DELTA_KB) {
-                if (ctx->change_count < ctx->max_changes) {
-                    procmem_entry_t *e = &ctx->changes[ctx->change_count++];
-                    e->pid = pid;
-                    snprintf(e->cmd, sizeof(e->cmd), "%s", entry->cmd);
-                    e->rss_kb = rss_kb;
-                    e->data_kb = data_kb;
-                    e->rss_delta_kb = rss_delta;
-                    e->data_delta_kb = data_delta;
-                }
-            }
+            rss_delta = rss_kb - prev->rss_kb;
+            data_delta = data_kb - prev->data_kb;
         }
+    }
+
+    /* Always add to changes list (limited by max_changes) */
+    if (ctx->change_count < ctx->max_changes) {
+        procmem_entry_t *e = &ctx->changes[ctx->change_count++];
+        e->pid = pid;
+        snprintf(e->cmd, sizeof(e->cmd), "%s", entry->cmd);
+        e->rss_kb = rss_kb;
+        e->data_kb = data_kb;
+        e->rss_delta_kb = rss_delta;
+        e->data_delta_kb = data_delta;
     }
     
     return true;
