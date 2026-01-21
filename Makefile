@@ -113,6 +113,10 @@ test: all
 deb:
 	dpkg-buildpackage -us -uc -b
 
+# Build self-extracting installer
+installer: all plugins
+	./scripts/make_installer.sh
+
 # Dependencies (auto-generated)
 -include $(BUILDDIR)/**/*.d
 
