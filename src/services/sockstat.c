@@ -19,8 +19,10 @@
 
 typedef struct {
     sockstat_summary_t summary;
+    sockstat_summary_t previous_summary;
     socket_entry_t sockets[MAX_SOCKETS];
     int socket_count;
+    bool has_previous;
 } sockstat_priv_t;
 
 static sockstat_priv_t g_sockstat;
@@ -174,6 +176,10 @@ static int parse_tcp_detailed(const char *path, sockstat_priv_t *priv) {
 static int sockstat_collect(qmem_service_t *svc) {
     sockstat_priv_t *priv = (sockstat_priv_t *)svc->priv;
     
+    /* Save previous */
+    priv->previous_summary = priv->summary;
+    priv->has_previous = true;
+    
     memset(&priv->summary, 0, sizeof(priv->summary));
     priv->socket_count = 0;
     
@@ -200,14 +206,19 @@ static int sockstat_snapshot(qmem_service_t *svc, json_builder_t *j) {
     json_key(j, "tcp");
     json_object_start(j);
     json_kv_int(j, "total", priv->summary.tcp_total);
+    json_kv_int(j, "total_delta", priv->summary.tcp_total - priv->previous_summary.tcp_total);
     json_kv_int(j, "established", priv->summary.tcp_established);
+    json_kv_int(j, "established_delta", priv->summary.tcp_established - priv->previous_summary.tcp_established);
     json_kv_int(j, "time_wait", priv->summary.tcp_time_wait);
+    json_kv_int(j, "time_wait_delta", priv->summary.tcp_time_wait - priv->previous_summary.tcp_time_wait);
     json_kv_int(j, "close_wait", priv->summary.tcp_close_wait);
     json_kv_int(j, "listen", priv->summary.tcp_listen);
     json_object_end(j);
     
     json_kv_int(j, "udp_total", priv->summary.udp_total);
+    json_kv_int(j, "udp_total_delta", priv->summary.udp_total - priv->previous_summary.udp_total);
     json_kv_int(j, "unix_total", priv->summary.unix_total);
+    json_kv_int(j, "unix_total_delta", priv->summary.unix_total - priv->previous_summary.unix_total);
     
     /* Add detailed sockets list */
     json_key(j, "sockets");

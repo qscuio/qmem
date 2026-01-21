@@ -200,7 +200,7 @@ int cmd_status(const char *socket_path, const char *target) {
     const char *netstat = strstr(response, "\"netstat\":");
     if (netstat) {
         printf("\n" CYAN "=== Network ===" NC "\n");
-        printf("%-10s %12s %12s %10s %10s\n", "Interface", "RX bytes", "TX bytes", "RX rate", "TX rate");
+        printf("%-10s %12s %12s %12s %12s\n", "Interface", "RX bytes", "RX delta", "TX bytes", "TX delta");
         
         const char *ifaces = strstr(netstat, "\"interfaces\":");
         if (ifaces) {
@@ -222,14 +222,16 @@ int cmd_status(const char *socket_path, const char *target) {
                 
                 int64_t rx = json_get_int(pos, "rx_bytes");
                 int64_t tx = json_get_int(pos, "tx_bytes");
-                double rx_rate = json_get_double(pos, "rx_rate");
-                double tx_rate = json_get_double(pos, "tx_rate");
+                int64_t rx_delta = json_get_int(pos, "rx_bytes_delta");
+                int64_t tx_delta = json_get_int(pos, "tx_bytes_delta");
                 
-                char rx_buf[32], tx_buf[32];
+                char rx_buf[32], tx_buf[32], rxd_buf[32], txd_buf[32];
                 format_kb(rx_buf, sizeof(rx_buf), rx / 1024);
                 format_kb(tx_buf, sizeof(tx_buf), tx / 1024);
+                format_kb(rxd_buf, sizeof(rxd_buf), rx_delta / 1024);
+                format_kb(txd_buf, sizeof(txd_buf), tx_delta / 1024);
                 
-                printf("%-10s %12s %12s %8.1f/s %8.1f/s\n", name, rx_buf, tx_buf, rx_rate, tx_rate);
+                printf("%-10s %12s %12s %12s %12s\n", name, rx_buf, rxd_buf, tx_buf, txd_buf);
                 pos++;
             }
         }
@@ -245,12 +247,37 @@ int cmd_status(const char *socket_path, const char *target) {
             int64_t estab = json_get_int(tcp, "established");
             int64_t tw = json_get_int(tcp, "time_wait");
             int64_t listen = json_get_int(tcp, "listen");
-            printf("TCP: %ld (ESTAB:%ld TIME_WAIT:%ld LISTEN:%ld)  ",
-                   (long)total, (long)estab, (long)tw, (long)listen);
+            
+            int64_t total_d = json_get_int(tcp, "total_delta");
+            int64_t estab_d = json_get_int(tcp, "established_delta");
+            int64_t tw_d = json_get_int(tcp, "time_wait_delta");
+            
+            char t_str[64], e_str[64], tw_str[64];
+            snprintf(t_str, 64, "%ld", (long)total);
+            if (total_d != 0) snprintf(t_str+strlen(t_str), 64-strlen(t_str), "%s%ld", total_d>0?"+":"", (long)total_d);
+            
+            snprintf(e_str, 64, "%ld", (long)estab);
+            if (estab_d != 0) snprintf(e_str+strlen(e_str), 64-strlen(e_str), "%s%ld", estab_d>0?"+":"", (long)estab_d);
+
+            snprintf(tw_str, 64, "%ld", (long)tw);
+            if (tw_d != 0) snprintf(tw_str+strlen(tw_str), 64-strlen(tw_str), "%s%ld", tw_d>0?"+":"", (long)tw_d);
+            
+            printf("TCP: %s (ESTAB:%s TIME_WAIT:%s LISTEN:%ld)  ",
+                   t_str, e_str, tw_str, (long)listen);
         }
         int64_t udp = json_get_int(sockstat, "udp_total");
         int64_t unix_sock = json_get_int(sockstat, "unix_total");
-        printf("UDP: %ld  Unix: %ld\n", (long)udp, (long)unix_sock);
+        int64_t udp_d = json_get_int(sockstat, "udp_total_delta");
+        int64_t unix_d = json_get_int(sockstat, "unix_total_delta");
+        
+        char u_str[64], ux_str[64];
+        snprintf(u_str, 64, "%ld", (long)udp);
+        if (udp_d != 0) snprintf(u_str+strlen(u_str), 64-strlen(u_str), "%s%ld", udp_d>0?"+":"", (long)udp_d);
+        
+        snprintf(ux_str, 64, "%ld", (long)unix_sock);
+        if (unix_d != 0) snprintf(ux_str+strlen(ux_str), 64-strlen(ux_str), "%s%ld", unix_d>0?"+":"", (long)unix_d);
+        
+        printf("UDP: %s  Unix: %s\n", u_str, ux_str);
     }
     
     /* Process Stats */

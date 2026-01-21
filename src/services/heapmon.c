@@ -162,11 +162,13 @@ static int heapmon_collect(qmem_service_t *svc) {
         
         /* Get RSS delta from procmem growers list */
         res->rss_delta_kb = 0;
+        res->rss_kb = 0;
         procmem_entry_t growers[MAX_TARGETS];
         int n = procmem_get_top_growers(growers, MAX_TARGETS);
         for (int j = 0; j < n; j++) {
             if (growers[j].pid == pid) {
                 res->rss_delta_kb = growers[j].rss_delta_kb;
+                res->rss_kb = growers[j].rss_kb;
                 break;
             }
         }
@@ -192,6 +194,8 @@ static int heapmon_snapshot(qmem_service_t *svc, json_builder_t *j) {
         json_object_start(j);
         json_kv_int(j, "pid", e->pid);
         json_kv_string(j, "cmd", e->cmd);
+
+        json_kv_int(j, "rss_kb", e->rss_kb);
         json_kv_int(j, "rss_delta_kb", e->rss_delta_kb);
         json_kv_int(j, "heap_size_kb", e->heap_size_kb);
         json_kv_int(j, "heap_rss_kb", e->heap_rss_kb);

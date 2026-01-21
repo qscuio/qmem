@@ -16,6 +16,7 @@ typedef struct {
     int64_t heap_size_kb;
     int64_t heap_rss_kb;
     int64_t heap_private_dirty_kb;
+    int64_t rss_kb;                 /* From procmem/status */
     int64_t rss_delta_kb;           /* From procmem */
     int64_t heap_rss_delta_kb;
     int64_t heap_pd_delta_kb;
