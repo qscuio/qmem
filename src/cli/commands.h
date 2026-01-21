@@ -22,4 +22,7 @@ int cmd_raw(const char *socket_path);
 /* List active services */
 int cmd_services(const char *socket_path);
 
+/* List active sockets */
+int cmd_sockets(const char *socket_path);
+
 #endif /* QMEM_COMMANDS_H */

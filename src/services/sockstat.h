@@ -5,6 +5,7 @@
 #define QMEM_SOCKSTAT_H
 
 #include "service.h"
+#include <sys/types.h>
 
 extern qmem_service_t sockstat_service;
 
@@ -34,7 +35,21 @@ typedef struct {
     int unix_total;
 } sockstat_summary_t;
 
+typedef struct {
+    char local_addr[64];
+    char rem_addr[64];
+    uint32_t state;
+    uint32_t tx_queue;
+    uint32_t rx_queue;
+    uint32_t inode;
+    pid_t pid;
+    char cmd[16];
+} socket_entry_t;
+
 /* Get socket summary */
 const sockstat_summary_t *sockstat_get_summary(void);
+
+/* Get active sockets */
+int sockstat_get_sockets(socket_entry_t *sockets, int max_sockets);
 
 #endif /* QMEM_SOCKSTAT_H */

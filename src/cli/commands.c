@@ -427,3 +427,113 @@ int cmd_services(const char *socket_path) {
     free(response);
     return 0;
 }
+
+static const char *get_sock_state_name(int state) {
+    switch (state) {
+        case 1:  return "ESTAB";
+        case 2:  return "SYN_SENT";
+        case 3:  return "SYN_RECV";
+        case 4:  return "FIN_WAIT1";
+        case 5:  return "FIN_WAIT2";
+        case 6:  return "TIME_WAIT";
+        case 7:  return "CLOSE";
+        case 8:  return "CLOSE_WAIT";
+        case 9:  return "LAST_ACK";
+        case 10: return "LISTEN";
+        case 11: return "CLOSING";
+        default: return "UNKNOWN";
+    }
+}
+
+int cmd_sockets(const char *socket_path) {
+    char *response = client_get_snapshot(socket_path);
+    if (!response) {
+        fprintf(stderr, "Error: Cannot connect to daemon at %s\n", socket_path);
+        return 1;
+    }
+    
+    printf("\n" CYAN "=== Active Sockets ===" NC "\n\n");
+    
+    const char *sockstat = strstr(response, "\"sockstat\":");
+    if (!sockstat) {
+        printf("No socket data available.\n");
+        free(response);
+        return 0;
+    }
+    
+    const char *sockets = strstr(sockstat, "\"sockets\":");
+    if (!sockets) {
+        printf("No detailed socket info available.\n");
+        free(response);
+        return 0;
+    }
+    
+    printf("%-8s %-16s %-22s %-22s %-10s %-8s %-8s\n", 
+           "PID", "Command", "Local Address", "Remote Address", "State", "TX_Q", "RX_Q");
+    print_separator();
+    
+    const char *pos = strchr(sockets, '[');
+    if (!pos) {
+        free(response);
+        return 0;
+    }
+    
+    while ((pos = strstr(pos, "{\"local\":")) != NULL) {
+        /* Extract fields */
+        
+        char local[64] = "";
+        const char *l_pos = strstr(pos, "\"local\":\"");
+        if (l_pos) {
+            l_pos += 9;
+            const char *end = strchr(l_pos, '"');
+            if (end) {
+                int len = end - l_pos;
+                if (len > 63) len = 63;
+                strncpy(local, l_pos, len);
+                local[len] = '\0';
+            }
+        }
+        
+        char remote[64] = "";
+        const char *r_pos = strstr(pos, "\"remote\":\"");
+        if (r_pos) {
+            r_pos += 10;
+            const char *end = strchr(r_pos, '"');
+            if (end) {
+                int len = end - r_pos;
+                if (len > 63) len = 63;
+                strncpy(remote, r_pos, len);
+                remote[len] = '\0';
+            }
+        }
+        
+        int64_t state = json_get_int(pos, "state");
+        int64_t tx_q = json_get_int(pos, "tx_q");
+        int64_t rx_q = json_get_int(pos, "rx_q");
+        int64_t pid = json_get_int(pos, "pid");
+        
+        char cmd[32] = "-";
+        const char *c_pos = strstr(pos, "\"cmd\":\"");
+        if (c_pos) {
+            c_pos += 7;
+            const char *end = strchr(c_pos, '"');
+            if (end) {
+                int len = end - c_pos;
+                if (len > 31) len = 31;
+                strncpy(cmd, c_pos, len);
+                cmd[len] = '\0';
+            }
+        }
+        
+        const char *state_str = get_sock_state_name((int)state);
+        
+        printf("%-8ld %-16s %-22s %-22s %-10s %-8ld %-8ld\n",
+               (long)pid, cmd, local, remote, state_str, (long)tx_q, (long)rx_q);
+        
+        pos++;
+    }
+    
+    printf("\n");
+    free(response);
+    return 0;
+}
