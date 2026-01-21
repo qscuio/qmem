@@ -8,11 +8,13 @@ TYPE=${1:-debug}
 
 mkdir -p bin
 if [ "$TYPE" == "debug" ]; then
-    INSTALLER_NAME="bin/qmem_install_debug.sh"
+    mkdir -p installers
+    INSTALLER_NAME="installers/qmem_install_debug.sh"
     MAKE_FLAGS="DEBUG=1"
     echo "Building DEBUG Installer for QMem v$VERSION"
 else
-    INSTALLER_NAME="bin/qmem_install_release.sh"
+    mkdir -p installers
+    INSTALLER_NAME="installers/qmem_install_release.sh"
     MAKE_FLAGS=""
     echo "Building RELEASE Installer for QMem v$VERSION"
 fi
