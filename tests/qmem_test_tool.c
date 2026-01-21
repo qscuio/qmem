@@ -2,6 +2,7 @@
  * qmem_test_tool.c - Simple test program for QMem
  * Simulates memory leaks, network traffic, and process churn.
  */
+#define _GNU_SOURCE
 #define _POSIX_C_SOURCE 200809L
 #include <stdio.h>
 #include <stdlib.h>
