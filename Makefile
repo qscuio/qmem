@@ -50,7 +50,11 @@ QMEM_TEST_TOOL := $(BINDIR)/qmem_test_tool
 
 .PHONY: all clean install test dirs plugins
 
-all: $(BINDIR)/qmemd $(BINDIR)/qmemctl $(BINDIR)/qmem_test_tool plugins installer_bin
+# Default target builds everything (Release and Debug installers)
+all: installer
+
+# Core build target (binaries and plugins)
+build_core: $(BINDIR)/qmemd $(BINDIR)/qmemctl $(BINDIR)/qmem_test_tool plugins
 
 # Daemon objects (include web if enabled, services linked statically for now)
 DAEMON_ALL_OBJS := $(DAEMON_OBJS) $(COMMON_OBJS)
@@ -147,12 +151,14 @@ installer_bin:
 installer:
 	@echo "Building Release Installer..."
 	$(MAKE) clean
-	$(MAKE) all DEBUG=0
+	$(MAKE) build_core DEBUG=0
+	$(MAKE) installer_bin DEBUG=0
 	@# Save release installer
 	@cp $(BINDIR)/qmem_install_release.sh /tmp/qmem_install_release.sh
 	@echo "Building Debug Installer..."
 	$(MAKE) clean
-	$(MAKE) all DEBUG=1
+	$(MAKE) build_core DEBUG=1
+	$(MAKE) installer_bin DEBUG=1
 	@# Restore release installer
 	@mv /tmp/qmem_install_release.sh $(BINDIR)/
 	@echo "Installers generated in $(BINDIR)/:"
