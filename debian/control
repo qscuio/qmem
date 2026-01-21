@@ -1,0 +1,28 @@
+Source: qmem
+Section: admin
+Priority: optional
+Maintainer: QMem Developers <qscuio@gmail.com>
+Build-Depends: debhelper-compat (= 13), gcc, make
+Standards-Version: 4.6.0
+Homepage: https://github.com/qscuio/qmem
+Rules-Requires-Root: no
+
+Package: qmem
+Architecture: any
+Depends: ${shlibs:Depends}, ${misc:Depends}
+Description: Linux system monitor daemon
+ QMem is a modular system monitoring daemon that tracks memory,
+ CPU, network, process, and socket statistics. Features include:
+ .
+  * 10 monitoring services (meminfo, cpuload, netstat, etc.)
+  * Dynamic plugin system with hot-reload
+  * REST API and web dashboard
+  * CLI tool (qmemctl)
+  * Unix socket IPC
+
+Package: qmem-plugins
+Architecture: any
+Depends: qmem (= ${binary:Version}), ${shlibs:Depends}, ${misc:Depends}
+Description: QMem monitoring plugins
+ Dynamic plugin (.so) files for QMem daemon.
+ Install to enable loading services as plugins with hot-reload support.

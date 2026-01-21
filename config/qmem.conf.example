@@ -1,0 +1,56 @@
+# QMem Configuration File
+# Copy to /etc/qmem/qmem.conf
+
+[daemon]
+# Monitoring interval in seconds
+interval = 10
+
+# Run in foreground (for debugging)
+foreground = false
+
+# PID file location
+pidfile = /run/qmem.pid
+
+# Unix socket path for IPC
+socket = /run/qmem.sock
+
+# Log level: debug, info, warn, error
+log_level = info
+
+[thresholds]
+# Minimum delta (in KB) to report process changes
+proc_min_delta_kb = 1024
+
+# Minimum delta (in KB) to report slab changes  
+slab_min_delta_kb = 512
+
+# Number of top processes to show
+proc_top_n = 12
+
+# Number of top slab caches to show
+slab_top_n = 20
+
+# Number of top RSS growers to scan heap for
+heap_scan_top_n = 12
+
+[services]
+# Enable/disable individual services
+meminfo = true
+slabinfo = true
+procmem = true
+heapmon = true
+vmstat = true
+
+[web]
+# Enable web interface
+enabled = true
+
+# HTTP listen address
+listen = 0.0.0.0
+
+# HTTP port
+port = 8080
+
+[history]
+# Number of snapshots to keep in memory
+max_snapshots = 360

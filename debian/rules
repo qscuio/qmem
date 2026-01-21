@@ -1,0 +1,30 @@
+#!/usr/bin/make -f
+
+export DH_VERBOSE = 1
+
+%:
+	dh $@
+
+override_dh_auto_build:
+	$(MAKE) all plugins
+
+override_dh_auto_install:
+	# Install main package
+	install -d $(CURDIR)/debian/qmem/usr/bin
+	install -m 755 bin/qmemd $(CURDIR)/debian/qmem/usr/bin/
+	install -m 755 bin/qmemctl $(CURDIR)/debian/qmem/usr/bin/
+	
+	# Install systemd service
+	install -d $(CURDIR)/debian/qmem/lib/systemd/system
+	install -m 644 debian/qmem.service $(CURDIR)/debian/qmem/lib/systemd/system/
+	
+	# Install config
+	install -d $(CURDIR)/debian/qmem/etc/qmem
+	install -m 644 config/qmem.conf.example $(CURDIR)/debian/qmem/etc/qmem/qmem.conf
+	
+	# Install plugins package
+	install -d $(CURDIR)/debian/qmem-plugins/usr/lib/qmem/plugins
+	install -m 755 plugins/*.so $(CURDIR)/debian/qmem-plugins/usr/lib/qmem/plugins/
+
+override_dh_auto_clean:
+	$(MAKE) clean || true
