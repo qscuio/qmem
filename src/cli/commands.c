@@ -840,3 +840,123 @@ int cmd_sockets(const char *socket_path) {
     free(response);
     return 0;
 }
+
+int cmd_fdmon(const char *socket_path) {
+    char *response = client_get_snapshot(socket_path);
+    if (!response) {
+        fprintf(stderr, "Error: Cannot connect to daemon at %s\n", socket_path);
+        return 1;
+    }
+    
+    printf("\n" CYAN "=== File Descriptor Monitor ===" NC "\n\n");
+    
+    const char *fdmon = strstr(response, "\"fdmon\":");
+    if (!fdmon) {
+        printf("Service 'fdmon' data not found.\n");
+        free(response);
+        return 0;
+    }
+    
+    /* Summary */
+    const char *summary = strstr(fdmon, "\"summary\":");
+    if (summary) {
+        int64_t total = json_get_int(summary, "total_fds");
+        int64_t procs = json_get_int(summary, "proc_count");
+        int64_t leaks = json_get_int(summary, "potential_leaks");
+        
+        printf(BOLD "Summary:" NC " Total FDs: %ld  Processes: %ld  Potential Leaks: %ld\n\n",
+               (long)total, (long)procs, (long)leaks);
+    }
+    
+    /* Top consumers */
+    const char *consumers = strstr(fdmon, "\"top_consumers\":");
+    if (consumers) {
+        printf(BOLD "Top FD Consumers" NC "\n");
+        printf("%-8s %-8s %-8s %-10s %-8s %-8s %-8s %-8s %s\n",
+               "PID", "FDs", "Initial", "Change", "Files", "Sockets", "Pipes", "Other", "Command");
+        print_separator();
+        
+        const char *pos = strchr(consumers, '[');
+        int count = 0;
+        while (pos && (pos = strstr(pos, "{\"pid\":")) != NULL && count < 15) {
+            int64_t pid = json_get_int(pos, "pid");
+            int64_t fd_count = json_get_int(pos, "fd_count");
+            int64_t initial = json_get_int(pos, "initial_fd_count");
+            int64_t change = json_get_int(pos, "fd_change");
+            int64_t files = json_get_int(pos, "files");
+            int64_t sockets = json_get_int(pos, "sockets");
+            int64_t pipes = json_get_int(pos, "pipes");
+            int64_t other = json_get_int(pos, "other") + json_get_int(pos, "eventfds");
+            
+            char cmd[64] = "unknown";
+            const char *c_pos = strstr(pos, "\"cmd\":\"");
+            if (c_pos) {
+                c_pos += 7;
+                const char *end = strchr(c_pos, '"');
+                if (end) {
+                    int len = end - c_pos;
+                    if (len > 63) len = 63;
+                    snprintf(cmd, sizeof(cmd), "%.*s", len, c_pos);
+                }
+            }
+            
+            char s_change[32];
+            if (change > 0) {
+                snprintf(s_change, sizeof(s_change), GREEN "+%ld" NC, (long)change);
+            } else if (change < 0) {
+                snprintf(s_change, sizeof(s_change), RED "%ld" NC, (long)change);
+            } else {
+                snprintf(s_change, sizeof(s_change), "0");
+            }
+            
+            printf("%-8ld %-8ld %-8ld %-10s %-8ld %-8ld %-8ld %-8ld %s\n",
+                   (long)pid, (long)fd_count, (long)initial, s_change,
+                   (long)files, (long)sockets, (long)pipes, (long)other, cmd);
+            
+            pos++;
+            count++;
+        }
+        printf("\n");
+    }
+    
+    /* Potential leakers */
+    const char *leakers = strstr(fdmon, "\"leakers\":");
+    if (leakers) {
+        const char *pos = strchr(leakers, '[');
+        if (pos && strstr(pos, "{\"pid\":")) {
+            printf(BOLD YELLOW "Potential FD Leakers (Growing FD Count)" NC "\n");
+            printf("%-8s %-8s %-8s %-10s %s\n", "PID", "FDs", "Initial", "Growth", "Command");
+            print_separator();
+            
+            int count = 0;
+            while (pos && (pos = strstr(pos, "{\"pid\":")) != NULL && count < 10) {
+                int64_t pid = json_get_int(pos, "pid");
+                int64_t fd_count = json_get_int(pos, "fd_count");
+                int64_t initial = json_get_int(pos, "initial_fd_count");
+                int64_t change = json_get_int(pos, "fd_change");
+                
+                char cmd[64] = "unknown";
+                const char *c_pos = strstr(pos, "\"cmd\":\"");
+                if (c_pos) {
+                    c_pos += 7;
+                    const char *end = strchr(c_pos, '"');
+                    if (end) {
+                        int len = end - c_pos;
+                        if (len > 63) len = 63;
+                        snprintf(cmd, sizeof(cmd), "%.*s", len, c_pos);
+                    }
+                }
+                
+                printf("%-8ld %-8ld %-8ld " RED "+%-8ld" NC " %s\n",
+                       (long)pid, (long)fd_count, (long)initial, (long)change, cmd);
+                
+                pos++;
+                count++;
+            }
+            printf("\n");
+        }
+    }
+    
+    free(response);
+    return 0;
+}

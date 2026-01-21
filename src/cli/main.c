@@ -17,6 +17,7 @@ static void print_usage(const char *prog) {
     printf("  top       Show top memory consumers/growers\n");
     printf("  slab      Show slab cache changes\n");
     printf("  sockets   Show detailed socket connections\n");
+    printf("  fdmon     Show file descriptor usage and leaks\n");
     printf("  watch     Continuously monitor (like top)\n");
     printf("            Usage: watch [list]|[svc]\n");
     printf("  raw       Dump raw JSON snapshot\n");
@@ -98,6 +99,8 @@ int main(int argc, char **argv) {
         return cmd_watch(socket_path, interval, target);
     } else if (strcmp(command, "raw") == 0) {
         return cmd_raw(socket_path);
+    } else if (strcmp(command, "fdmon") == 0 || strcmp(command, "fd") == 0) {
+        return cmd_fdmon(socket_path);
     } else {
         fprintf(stderr, "Unknown command: %s\n", command);
         print_usage(argv[0]);

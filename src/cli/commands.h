@@ -26,4 +26,7 @@ int cmd_services(const char *socket_path);
 /* List active sockets */
 int cmd_sockets(const char *socket_path);
 
+/* Execute fdmon command (file descriptor monitoring) */
+int cmd_fdmon(const char *socket_path);
+
 #endif /* QMEM_COMMANDS_H */
