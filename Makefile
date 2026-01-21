@@ -111,6 +111,7 @@ $(PLUGINDIR)/memleak.so: $(SRCDIR)/services/memleak.c $(BUILDDIR)/services/procm
 
 clean:
 	rm -rf $(BUILDDIR) $(BINDIR) $(PLUGINDIR)
+	rm -f qmem_install_info.sh qmem_install_debug.sh qmem_install_release.sh
 
 install: all plugins
 	install -d /usr/local/bin

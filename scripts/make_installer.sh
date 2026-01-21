@@ -6,12 +6,13 @@ VERSION=$(head -n1 debian/changelog | cut -d'(' -f2 | cut -d')' -f1 | cut -d'-' 
 
 TYPE=${1:-debug}
 
+mkdir -p bin
 if [ "$TYPE" == "debug" ]; then
-    INSTALLER_NAME="qmem_install_debug.sh"
+    INSTALLER_NAME="bin/qmem_install_debug.sh"
     MAKE_FLAGS="DEBUG=1"
     echo "Building DEBUG Installer for QMem v$VERSION"
 else
-    INSTALLER_NAME="qmem_install_release.sh"
+    INSTALLER_NAME="bin/qmem_install_release.sh"
     MAKE_FLAGS=""
     echo "Building RELEASE Installer for QMem v$VERSION"
 fi
