@@ -126,8 +126,9 @@ deb:
 	dpkg-buildpackage -us -uc -b
 
 # Build self-extracting installer
-installer: dirs $(DAEMON) $(CLI) plugins
-	./scripts/make_installer.sh
+installer:
+	./scripts/make_installer.sh release
+	./scripts/make_installer.sh debug
 
 # Dependencies (auto-generated)
 -include $(BUILDDIR)/**/*.d

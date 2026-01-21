@@ -2,15 +2,21 @@
 # make_installer.sh - Generate self-extracting installer
 set -e
 
-VERSION="1.0.2"
-INSTALLER_NAME="qmem_install.sh"
-PAYLOAD_DIR="installer_payload"
+VERSION=$(head -n1 debian/changelog | cut -d'(' -f2 | cut -d')' -f1 | cut -d'-' -f1)
 
-# Check build
-if [ ! -f "bin/qmemd" ] || [ ! -f "bin/qmemctl" ]; then
-    echo "Error: Binaries not found. Run 'make all plugins' first."
-    exit 1
+TYPE=${1:-debug}
+
+if [ "$TYPE" == "debug" ]; then
+    INSTALLER_NAME="qmem_install_debug.sh"
+    MAKE_FLAGS="DEBUG=1"
+    echo "Building DEBUG Installer for QMem v$VERSION"
+else
+    INSTALLER_NAME="qmem_install_release.sh"
+    MAKE_FLAGS=""
+    echo "Building RELEASE Installer for QMem v$VERSION"
 fi
+
+PAYLOAD_DIR="installer_payload"
 
 # Prepare payload directory
 rm -rf "$PAYLOAD_DIR"
@@ -18,6 +24,11 @@ mkdir -p "$PAYLOAD_DIR"/bin
 mkdir -p "$PAYLOAD_DIR"/plugins
 mkdir -p "$PAYLOAD_DIR"/config
 mkdir -p "$PAYLOAD_DIR"/systemd
+
+# Build
+echo "Compiling..."
+make clean >/dev/null
+make dirs bin/qmemd bin/qmemctl plugins $MAKE_FLAGS >/dev/null 2>&1
 
 # Copy files
 cp bin/qmemd "$PAYLOAD_DIR"/bin/
@@ -27,7 +38,7 @@ cp config/qmem.conf.example "$PAYLOAD_DIR"/config/qmem.conf
 cp debian/qmem.service "$PAYLOAD_DIR"/systemd/
 
 # Create version file
-echo "$VERSION" > "$PAYLOAD_DIR"/version
+echo "$VERSION-$TYPE" > "$PAYLOAD_DIR"/version
 
 # Create tarball
 tar -czf payload.tar.gz -C "$PAYLOAD_DIR" .

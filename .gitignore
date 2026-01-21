@@ -1,28 +1,11 @@
-# Build artifacts
 build/
 bin/
 plugins/
 *.o
 *.so
-*.d
-
-# Packaging
-debian/qmem/
-debian/qmem-plugins/
-.debhelper/
-*.deb
-*.buildinfo
-*.changes
-debian/files
-debian/*.substvars
-debian/*.debhelper.log
-
-# Config
-*.pid
-config/qmem.conf
-!config/qmem.conf.example
-
-# Misc
-.DS_Store
-tags
-vm.log
+.vscode/
+qmem_install.sh
+qmem_install_release.sh
+qmem_install_debug.sh
+installer_payload/
+payload.tar.gz

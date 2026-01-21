@@ -34,11 +34,12 @@ int main(int argc, char **argv) {
         {"socket",   required_argument, 0, 's'},
         {"interval", required_argument, 0, 'i'},
         {"help",     no_argument,       0, 'h'},
+        {"version",  no_argument,       0, 'v'},
         {0, 0, 0, 0}
     };
     
     int opt;
-    while ((opt = getopt_long(argc, argv, "s:i:h", long_options, NULL)) != -1) {
+    while ((opt = getopt_long(argc, argv, "s:i:hv", long_options, NULL)) != -1) {
         switch (opt) {
             case 's':
                 socket_path = optarg;
@@ -48,6 +49,9 @@ int main(int argc, char **argv) {
                 break;
             case 'h':
                 print_usage(argv[0]);
+                return 0;
+            case 'v':
+                printf("qmemctl v1.0.11\n");
                 return 0;
             default:
                 print_usage(argv[0]);
