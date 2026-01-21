@@ -240,7 +240,7 @@ static int cpuload_collect(qmem_service_t *svc) {
         entry->utime = utime;
         entry->stime = stime;
         entry->total_time = utime + stime;
-        strncpy(entry->cmd, cmd, sizeof(entry->cmd) - 1);
+        snprintf(entry->cmd, sizeof(entry->cmd), "%s", cmd);
         insert_hash(priv->current, entry);
         
         /* Calculate CPU percentage if we have previous data */
@@ -253,7 +253,7 @@ static int cpuload_collect(qmem_service_t *svc) {
                 if (cpu_pct > 0.01) {  /* Filter out near-zero */
                     cpuload_entry_t *e = &all_entries[entry_count++];
                     e->pid = pid;
-                    strncpy(e->cmd, cmd, sizeof(e->cmd) - 1);
+                    snprintf(e->cmd, sizeof(e->cmd), "%s", cmd);
                     e->cpu_percent = cpu_pct;
                     e->utime = utime;
                     e->stime = stime;

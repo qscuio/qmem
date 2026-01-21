@@ -136,7 +136,7 @@ static bool collect_callback(pid_t pid, void *userdata) {
                 if (ctx->change_count < ctx->max_changes) {
                     procmem_entry_t *e = &ctx->changes[ctx->change_count++];
                     e->pid = pid;
-                    strncpy(e->cmd, entry->cmd, sizeof(e->cmd) - 1);
+                    snprintf(e->cmd, sizeof(e->cmd), "%s", entry->cmd);
                     e->rss_kb = rss_kb;
                     e->data_kb = data_kb;
                     e->rss_delta_kb = rss_delta;

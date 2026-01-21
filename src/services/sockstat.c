@@ -88,7 +88,7 @@ static void map_inodes_to_pids(sockstat_priv_t *priv) {
         while ((fd_ent = readdir(fd_dir)) != NULL) {
             if (fd_ent->d_name[0] == '.') continue;
             
-            char link_path[128];
+            char link_path[512];
             snprintf(link_path, sizeof(link_path), "%s/%s", fd_path, fd_ent->d_name);
             
             char target[128];
@@ -110,7 +110,7 @@ static void map_inodes_to_pids(sockstat_priv_t *priv) {
                             if (proc_read_file(cmd_path, cmd, sizeof(cmd)) > 0) {
                                 char *nl = strchr(cmd, '\n');
                                 if (nl) *nl = '\0';
-                                strncpy(priv->sockets[i].cmd, cmd, sizeof(priv->sockets[i].cmd) - 1);
+                                snprintf(priv->sockets[i].cmd, sizeof(priv->sockets[i].cmd), "%s", cmd);
                             }
                         }
                     }

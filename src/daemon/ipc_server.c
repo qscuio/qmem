@@ -145,7 +145,7 @@ static void *server_thread(void *arg) {
 }
 
 int ipc_server_start(const qmem_config_t *cfg) {
-    strncpy(g_socket_path, cfg->socket_path, sizeof(g_socket_path) - 1);
+    snprintf(g_socket_path, sizeof(g_socket_path), "%s", cfg->socket_path);
     
     /* Remove existing socket */
     unlink(g_socket_path);
@@ -161,7 +161,7 @@ int ipc_server_start(const qmem_config_t *cfg) {
     struct sockaddr_un addr;
     memset(&addr, 0, sizeof(addr));
     addr.sun_family = AF_UNIX;
-    strncpy(addr.sun_path, g_socket_path, sizeof(addr.sun_path) - 1);
+    snprintf(addr.sun_path, sizeof(addr.sun_path), "%.*s", (int)sizeof(addr.sun_path) - 1, g_socket_path);
     
     if (bind(g_server_fd, (struct sockaddr *)&addr, sizeof(addr)) < 0) {
         log_error("Failed to bind socket: %s", strerror(errno));

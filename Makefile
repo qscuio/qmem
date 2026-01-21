@@ -2,7 +2,7 @@
 # Main Makefile
 
 CC := gcc
-CFLAGS := -Wall -Wextra -Wpedantic -std=c11 -I./include -I./src
+CFLAGS := -Wall -Wextra -Wpedantic -Werror -std=c11 -I./include -I./src
 LDFLAGS := -lpthread -ldl
 
 # Build type

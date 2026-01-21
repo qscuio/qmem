@@ -148,7 +148,7 @@ static int procstat_collect(qmem_service_t *svc) {
             procstat_entry_t *e = &priv->blocked[priv->blocked_count++];
             e->pid = pid;
             e->tid = pid;
-            strncpy(e->cmd, cmd, sizeof(e->cmd) - 1);
+            snprintf(e->cmd, sizeof(e->cmd), "%s", cmd);
             e->state = state;
             e->state_desc = state_to_desc(state);
             e->is_blocked = true;
@@ -174,7 +174,7 @@ static int procstat_collect(qmem_service_t *svc) {
                             procstat_entry_t *te = &priv->blocked[priv->blocked_count++];
                             te->pid = pid;
                             te->tid = tid;
-                            strncpy(te->cmd, thread_cmd, sizeof(te->cmd) - 1);
+                            snprintf(te->cmd, sizeof(te->cmd), "%s", thread_cmd);
                             te->state = thread_state;
                             te->state_desc = state_to_desc(thread_state);
                             te->is_blocked = true;
@@ -280,7 +280,7 @@ int procstat_get_threads(pid_t pid, procstat_entry_t *entries, int max_entries) 
             procstat_entry_t *e = &entries[count++];
             e->pid = pid;
             e->tid = tid;
-            strncpy(e->cmd, cmd, sizeof(e->cmd) - 1);
+            snprintf(e->cmd, sizeof(e->cmd), "%s", cmd);
             e->state = state;
             e->state_desc = state_to_desc(state);
             e->is_blocked = (state == 'D');

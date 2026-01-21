@@ -78,7 +78,14 @@ static void add_event(procevent_priv_t *priv, proc_event_type_t type,
     e->pid = pid;
     e->parent_pid = ppid;
     e->exit_code = exit_code;
-    strncpy(e->cmd, cmd ? cmd : "", sizeof(e->cmd) - 1);
+    if (cmd) {
+        size_t len = strlen(cmd);
+        if (len >= sizeof(e->cmd)) len = sizeof(e->cmd) - 1;
+        memmove(e->cmd, cmd, len);
+        e->cmd[len] = '\0';
+    } else {
+        e->cmd[0] = '\0';
+    }
     e->timestamp = (uint64_t)time(NULL);
     
     priv->event_head = (priv->event_head + 1) % MAX_EVENTS;
@@ -129,7 +136,7 @@ static int procevent_collect(qmem_service_t *svc) {
             /* Trim newline */
             char *nl = strchr(cmd, '\n');
             if (nl) *nl = '\0';
-            strncpy(e->cmd, cmd, sizeof(e->cmd) - 1);
+            snprintf(e->cmd, sizeof(e->cmd), "%s", cmd);
         }
         
         insert_pid(priv->curr_pids, e);

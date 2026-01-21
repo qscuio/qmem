@@ -144,7 +144,7 @@ static int slabinfo_collect(qmem_service_t *svc) {
                 
                 if (abs_delta >= MIN_DELTA_BYTES) {
                     slab_entry_t *e = &all_changes[change_count++];
-                    strncpy(e->name, cur->name, sizeof(e->name) - 1);
+                    snprintf(e->name, sizeof(e->name), "%s", cur->name);
                     e->size_bytes = cur->size_bytes;
                     e->delta_bytes = delta;
                     e->num_objs = cur->num_objs;

@@ -51,7 +51,7 @@ static http_handler_t find_handler(const char *path) {
         if (strcmp(g_routes[i].path, path) == 0) {
             return g_routes[i].handler;
         }
-        /* Check prefix match for api/* patterns */
+        /* Check prefix match for api wildcard patterns */
         size_t len = strlen(g_routes[i].path);
         if (len > 0 && g_routes[i].path[len-1] == '*') {
             if (strncmp(path, g_routes[i].path, len - 1) == 0) {
