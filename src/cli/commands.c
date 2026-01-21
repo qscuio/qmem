@@ -164,8 +164,8 @@ int cmd_memleak(const char *socket_path) {
     }
 
     /* Helper macro for table headers */
-#define HEADER_PROC "%-8s %-16s %-12s %-12s %-12s %-12s %-12s"
-#define ROWS_PROC   "%-8ld %-16s %-12s %-12s %-12s %-12s %-12s"
+#define HEADER_PROC "%-8s %-12s %-12s %-12s %-12s %-12s %s"
+#define ROWS_PROC   "%-8ld %-12s %-12s %-12s %-12s %-12s %s"
 #define HEADER_SLAB "%-24s %-12s %-12s %-12s"
 #define ROWS_SLAB   "%-24s %-12s %-12s %-12ld"
 
@@ -173,7 +173,7 @@ int cmd_memleak(const char *socket_path) {
     const char *proc_usage = strstr(memleak, "\"process_usage\":");
     if (proc_usage) {
         printf(BOLD "Top Process Memory (Absolute)" NC "\n");
-        printf(HEADER_PROC "\n", "PID", "Command", "Total RSS", "Delta", "Heap RSS", "Delta", "Heap Size");
+        printf(HEADER_PROC "\n", "PID", "Total RSS", "Delta", "Heap RSS", "Delta", "Heap Size", "Command");
         print_separator();
         
         const char *pos = strchr(proc_usage, '[');
@@ -182,14 +182,14 @@ int cmd_memleak(const char *socket_path) {
              /* Parse fields */
              int64_t pid = json_get_int(pos, "pid");
              
-             char cmd[64] = "unknown";
+             char cmd[128] = "unknown"; /* Longer buffer for command at end */
              const char *cmd_pos = strstr(pos, "\"cmd\":\"");
              if (cmd_pos) {
                  cmd_pos += 7;
                  const char *end = strchr(cmd_pos, '"');
                  if (end) {
                      int len = end - cmd_pos;
-                     if (len > 63) len = 63;
+                     if (len > 127) len = 127;
                      snprintf(cmd, sizeof(cmd), "%.*s", len, cmd_pos);
                  }
              }
@@ -207,7 +207,7 @@ int cmd_memleak(const char *socket_path) {
              format_delta(s_heap_d, sizeof(s_heap_d), heap_delta);
              format_kb(s_size, sizeof(s_size), heap_size);
 
-             printf(ROWS_PROC "\n", pid, cmd, s_rss, s_rss_d, s_heap, s_heap_d, s_size);
+             printf(ROWS_PROC "\n", pid, s_rss, s_rss_d, s_heap, s_heap_d, s_size, cmd);
              
              pos++;
              count++;

@@ -34,10 +34,10 @@ CLI_SRCS := $(wildcard $(SRCDIR)/cli/*.c)
 WEB_SRCS := $(wildcard $(SRCDIR)/web/*.c)
 
 # Object files
-COMMON_OBJS := $(COMMON_SRCS:$(SRCDIR)/%.c=$(BUILDDIR)/%.o)
+COMMON_OBJS := $(BUILDDIR)/common/format.o $(BUILDDIR)/common/json.o $(BUILDDIR)/common/log.o $(BUILDDIR)/common/proc_utils.o
 SERVICE_OBJS := $(SERVICE_SRCS:$(SRCDIR)/%.c=$(BUILDDIR)/%.o)
-DAEMON_OBJS := $(DAEMON_SRCS:$(SRCDIR)/%.c=$(BUILDDIR)/%.o)
-CLI_OBJS := $(CLI_SRCS:$(SRCDIR)/%.c=$(BUILDDIR)/%.o)
+DAEMON_OBJS := $(BUILDDIR)/daemon/config.o $(BUILDDIR)/daemon/daemon.o $(BUILDDIR)/daemon/ipc_server.o $(BUILDDIR)/daemon/main.o $(BUILDDIR)/daemon/plugin_loader.o $(BUILDDIR)/daemon/ringbuffer.o $(BUILDDIR)/daemon/service_manager.o $(BUILDDIR)/web/api.o $(BUILDDIR)/web/http_server.o $(BUILDDIR)/web/static_files.o
+CLI_OBJS := $(BUILDDIR)/cli/client.o $(BUILDDIR)/cli/commands.o $(BUILDDIR)/cli/main.o
 WEB_OBJS := $(WEB_SRCS:$(SRCDIR)/%.c=$(BUILDDIR)/%.o)
 
 # Plugin shared libraries
@@ -46,6 +46,11 @@ PLUGIN_TARGETS := $(patsubst $(SRCDIR)/services/%.c,$(PLUGINDIR)/%.so,$(SERVICE_
 # Targets
 DAEMON := $(BINDIR)/qmemd
 CLI := $(BINDIR)/qmemctl
+QMEM_TEST_TOOL := $(BINDIR)/qmem_test_tool
+
+.PHONY: all clean install test dirs plugins
+
+all: $(BINDIR)/qmemd $(BINDIR)/qmemctl $(BINDIR)/qmem_test_tool plugins
 
 # Daemon objects (include web if enabled, services linked statically for now)
 DAEMON_ALL_OBJS := $(DAEMON_OBJS) $(COMMON_OBJS)
@@ -53,9 +58,7 @@ ifeq ($(WEB), 1)
     DAEMON_ALL_OBJS += $(WEB_OBJS)
 endif
 
-.PHONY: all clean install test dirs plugins
 
-all: dirs $(DAEMON) $(CLI) plugins installer
 
 # Build with plugins as .so files
 plugins: dirs plugin-dirs $(PLUGIN_TARGETS)
@@ -74,10 +77,13 @@ dirs:
 $(DAEMON): $(DAEMON_ALL_OBJS)
 	$(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS)
 
-$(CLI): $(CLI_OBJS) $(COMMON_OBJS)
+$(BINDIR)/qmemctl: $(CLI_OBJS) $(COMMON_OBJS)
 	$(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS)
 
-$(BUILDDIR)/%.o: $(SRCDIR)/%.c
+$(BINDIR)/qmem_test_tool: tests/qmem_test_tool.c | dirs
+	$(CC) $(CFLAGS) -o $@ $<
+
+$(BUILDDIR)/%.o: $(SRCDIR)/%.c | dirs
 	$(CC) $(CFLAGS) -c -o $@ $<
 
 # Plugin build rule - compile service as shared library
@@ -86,19 +92,19 @@ $(PLUGINDIR)/%.so: $(SRCDIR)/services/%.c $(COMMON_OBJS)
 	$(CC) $(CFLAGS) -fPIC -shared -o $@ $< $(COMMON_OBJS) $(LDFLAGS)
 
 # Procmem object without plugin define for static linking into other plugins
-$(BUILDDIR)/services/procmem_noplugin.o: $(SRCDIR)/services/procmem.c
+$(BUILDDIR)/services/procmem_noplugin.o: $(SRCDIR)/services/procmem.c | dirs
 	$(CC) $(CFLAGS) -DNO_PLUGIN_DEFINE -fPIC -c -o $@ $<
 
 # Slabinfo object without plugin define
-$(BUILDDIR)/services/slabinfo_noplugin.o: $(SRCDIR)/services/slabinfo.c
+$(BUILDDIR)/services/slabinfo_noplugin.o: $(SRCDIR)/services/slabinfo.c | dirs
 	$(CC) $(CFLAGS) -DNO_PLUGIN_DEFINE -fPIC -c -o $@ $<
 
 # Heapmon object without plugin define
-$(BUILDDIR)/services/heapmon_noplugin.o: $(SRCDIR)/services/heapmon.c
+$(BUILDDIR)/services/heapmon_noplugin.o: $(SRCDIR)/services/heapmon.c | dirs
 	$(CC) $(CFLAGS) -DNO_PLUGIN_DEFINE -fPIC -c -o $@ $<
 
 # Meminfo object without plugin define
-$(BUILDDIR)/services/meminfo_noplugin.o: $(SRCDIR)/services/meminfo.c
+$(BUILDDIR)/services/meminfo_noplugin.o: $(SRCDIR)/services/meminfo.c | dirs
 	$(CC) $(CFLAGS) -DNO_PLUGIN_DEFINE -fPIC -c -o $@ $<
 
 # Heapmon needs procmem functions

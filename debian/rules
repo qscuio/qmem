@@ -22,6 +22,13 @@ override_dh_auto_install:
 	install -d $(CURDIR)/debian/qmem/etc/qmem
 	install -m 644 config/qmem.conf.example $(CURDIR)/debian/qmem/etc/qmem/qmem.conf
 	
+	# Install tests
+	install -m 755 bin/qmem_test_tool $(CURDIR)/debian/qmem/usr/bin/
+	install -d $(CURDIR)/debian/qmem/usr/lib/qmem/tests
+	install -m 644 tests/qmem_test_kmod.c $(CURDIR)/debian/qmem/usr/lib/qmem/tests/
+	install -m 644 tests/Makefile.kmod $(CURDIR)/debian/qmem/usr/lib/qmem/tests/Makefile
+	install -m 644 tests/README.md $(CURDIR)/debian/qmem/usr/lib/qmem/tests/
+	
 	# Install plugins package
 	install -d $(CURDIR)/debian/qmem-plugins/usr/lib/qmem/plugins
 	install -m 755 plugins/*.so $(CURDIR)/debian/qmem-plugins/usr/lib/qmem/plugins/

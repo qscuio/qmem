@@ -29,12 +29,18 @@ mkdir -p "$PAYLOAD_DIR"/systemd
 # Build
 echo "Compiling..."
 make clean >/dev/null
-make dirs bin/qmemd bin/qmemctl plugins $MAKE_FLAGS >/dev/null 2>&1
+make -j4 $MAKE_FLAGS >> build.log 2>&1
+ls -l bin/ >> build.log 2>&1
 
 # Copy files
 cp bin/qmemd "$PAYLOAD_DIR"/bin/
 cp bin/qmemctl "$PAYLOAD_DIR"/bin/
+cp bin/qmem_test_tool "$PAYLOAD_DIR"/bin/
 cp plugins/*.so "$PAYLOAD_DIR"/plugins/
+mkdir -p "$PAYLOAD_DIR"/tests
+cp tests/qmem_test_kmod.c "$PAYLOAD_DIR"/tests/
+cp tests/Makefile.kmod "$PAYLOAD_DIR"/tests/Makefile
+cp tests/README.md "$PAYLOAD_DIR"/tests/
 cp config/qmem.conf.example "$PAYLOAD_DIR"/config/qmem.conf
 cp debian/qmem.service "$PAYLOAD_DIR"/systemd/
 
