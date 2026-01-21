@@ -204,6 +204,49 @@ int cmd_status(const char *socket_path) {
             int64_t exits = json_get_int(counters, "exits");
             printf("Events: Forks: %ld  Exits: %ld\n", (long)forks, (long)exits);
         }
+        
+        const char *events = strstr(procevent, "\"recent_events\":");
+        if (events) {
+            printf("Recent Events:\n");
+            const char *pos = strchr(events, '[');
+            int count = 0;
+            while (pos && (pos = strstr(pos, "{\"pid\":")) != NULL && count < 5) {
+                int64_t pid = json_get_int(pos, "pid");
+                
+                /* Extract cmd */
+                char cmd[64] = "unknown";
+                const char *cmd_pos = strstr(pos, "\"cmd\":\"");
+                if (cmd_pos) {
+                    cmd_pos += 7;
+                    const char *end = strchr(cmd_pos, '"');
+                    if (end) {
+                        size_t len = end - cmd_pos;
+                        if (len > 63) len = 63;
+                        strncpy(cmd, cmd_pos, len);
+                        cmd[len] = '\0';
+                    }
+                }
+                
+                /* Extract type */
+                char type[16] = "unknown";
+                const char *type_pos = strstr(pos, "\"type\":\"");
+                if (type_pos) {
+                    type_pos += 8;
+                    const char *end = strchr(type_pos, '"');
+                    if (end) {
+                        size_t len = end - type_pos;
+                        if (len > 15) len = 15;
+                        strncpy(type, type_pos, len);
+                        type[len] = '\0';
+                    }
+                }
+                
+                printf("  %-6s PID:%-6ld %s\n", type, (long)pid, cmd);
+                
+                pos++;
+                count++;
+            }
+        }
     }
     
     print_separator();
