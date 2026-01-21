@@ -8,8 +8,8 @@ LDFLAGS := -lpthread -ldl
 # Build type
 DEBUG ?= 0
 ifeq ($(DEBUG), 1)
-    CFLAGS += -g -O0 -DDEBUG -fsanitize=address
-    LDFLAGS += -fsanitize=address
+    CFLAGS += -g -O0 -DDEBUG
+    LDFLAGS += -g
 else
     CFLAGS += -O2 -DNDEBUG
 endif
