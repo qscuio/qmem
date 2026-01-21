@@ -9,7 +9,9 @@ override_dh_auto_build:
 	$(MAKE) all plugins
 
 override_dh_auto_test:
-	# Skip tests (no test suite yet)
+	@echo "Skipping tests"
+
+override_dh_auto_install:
 	# Install main package
 	install -d $(CURDIR)/debian/qmem/usr/bin
 	install -m 755 bin/qmemd $(CURDIR)/debian/qmem/usr/bin/
