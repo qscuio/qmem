@@ -19,4 +19,7 @@ int cmd_watch(const char *socket_path, int interval);
 /* Execute raw command (dump JSON) */
 int cmd_raw(const char *socket_path);
 
+/* List active services */
+int cmd_services(const char *socket_path);
+
 #endif /* QMEM_COMMANDS_H */

@@ -350,3 +350,37 @@ int cmd_raw(const char *socket_path) {
     printf("%s\n", response);
     return 0;
 }
+
+int cmd_services(const char *socket_path) {
+    char *response = client_get_snapshot(socket_path);
+    if (!response) {
+        fprintf(stderr, "Error: Cannot connect to daemon at %s\n", socket_path);
+        return 1;
+    }
+    
+    printf("\n" CYAN "=== Active Services ===" NC "\n");
+    
+    const char *services[] = {
+        "meminfo", "System Memory",
+        "slabinfo", "Slab Cache",
+        "procmem", "Process Memory",
+        "heapmon", "Heap Analysis",
+        "vmstat", "VM Statistics",
+        "cpuload", "CPU Load",
+        "netstat", "Network Stats",
+        "procstat", "Process States",
+        "sockstat", "Socket Stats",
+        "procevent", "Process Events",
+        NULL
+    };
+    
+    for (int i = 0; services[i]; i += 2) {
+        if (json_find_key(response, services[i])) {
+            printf(GREEN "  %-12s" NC " %s\n", services[i], services[i+1]);
+        }
+    }
+    printf("\n");
+    
+    free(response);
+    return 0;
+}

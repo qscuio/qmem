@@ -17,6 +17,7 @@ static void print_usage(const char *prog) {
     printf("  top       Show top memory consumers/growers\n");
     printf("  slab      Show slab cache changes\n");
     printf("  watch     Continuously monitor (like top)\n");
+    printf("            Usage: watch [list]\n");
     printf("  raw       Dump raw JSON snapshot\n");
     printf("\nOptions:\n");
     printf("  -s, --socket PATH   Unix socket path (default: %s)\n", DEFAULT_SOCKET);
@@ -73,6 +74,10 @@ int main(int argc, char **argv) {
     } else if (strcmp(command, "slab") == 0) {
         return cmd_slab(socket_path);
     } else if (strcmp(command, "watch") == 0) {
+        /* Check for subcommand 'list' */
+        if (optind + 1 < argc && strcmp(argv[optind + 1], "list") == 0) {
+            return cmd_services(socket_path);
+        }
         return cmd_watch(socket_path, interval);
     } else if (strcmp(command, "raw") == 0) {
         return cmd_raw(socket_path);
