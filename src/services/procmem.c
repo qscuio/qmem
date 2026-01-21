@@ -33,8 +33,10 @@ typedef struct {
     /* Sorted results */
     procmem_entry_t growers[TOP_N];
     procmem_entry_t shrinkers[TOP_N];
+    procmem_entry_t top_rss[TOP_N];
     int grower_count;
     int shrinker_count;
+    int top_rss_count;
     
     /* Memory pool for entries */
     proc_entry_t pool[MAX_PROCS * 2];
@@ -163,6 +165,14 @@ static int compare_rss_shrinker(const void *a, const void *b) {
     return 0;
 }
 
+static int compare_rss_abs(const void *a, const void *b) {
+    const procmem_entry_t *ea = (const procmem_entry_t *)a;
+    const procmem_entry_t *eb = (const procmem_entry_t *)b;
+    if (eb->rss_kb > ea->rss_kb) return 1;
+    if (eb->rss_kb < ea->rss_kb) return -1;
+    return 0;
+}
+
 static int procmem_collect(qmem_service_t *svc) {
     procmem_priv_t *priv = (procmem_priv_t *)svc->priv;
     
@@ -200,6 +210,13 @@ static int procmem_collect(qmem_service_t *svc) {
         }
     }
     
+    /* Sort and take top absolute RSS (Using simple descending sort on rss_kb) */
+    qsort(all_changes, ctx.change_count, sizeof(procmem_entry_t), compare_rss_abs);
+    priv->top_rss_count = 0;
+    for (int i = 0; i < ctx.change_count && priv->top_rss_count < TOP_N; i++) {
+        priv->top_rss[priv->top_rss_count++] = all_changes[i];
+    }
+    
     priv->has_previous = true;
     return 0;
 }
@@ -235,6 +252,20 @@ static int procmem_snapshot(qmem_service_t *svc, json_builder_t *j) {
         json_kv_int(j, "data_kb", e->data_kb);
         json_kv_int(j, "rss_delta_kb", e->rss_delta_kb);
         json_kv_int(j, "data_delta_kb", e->data_delta_kb);
+        json_object_end(j);
+    }
+    json_array_end(j);
+    
+    json_key(j, "top_rss");
+    json_array_start(j);
+    for (int i = 0; i < priv->top_rss_count; i++) {
+        procmem_entry_t *e = &priv->top_rss[i];
+        json_object_start(j);
+        json_kv_int(j, "pid", e->pid);
+        json_kv_string(j, "cmd", e->cmd);
+        json_kv_int(j, "rss_kb", e->rss_kb);
+        json_kv_int(j, "data_kb", e->data_kb);
+        json_kv_int(j, "rss_delta_kb", e->rss_delta_kb);
         json_object_end(j);
     }
     json_array_end(j);
@@ -280,5 +311,12 @@ int procmem_get_top_shrinkers(procmem_entry_t *entries, int max_entries) {
     int n = g_procmem.shrinker_count;
     if (n > max_entries) n = max_entries;
     memcpy(entries, g_procmem.shrinkers, n * sizeof(procmem_entry_t));
+    return n;
+}
+
+int procmem_get_top_rss(procmem_entry_t *entries, int max_entries) {
+    int n = g_procmem.top_rss_count;
+    if (n > max_entries) n = max_entries;
+    memcpy(entries, g_procmem.top_rss, n * sizeof(procmem_entry_t));
     return n;
 }

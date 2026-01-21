@@ -79,6 +79,7 @@ static int memleak_snapshot(qmem_service_t *svc, json_builder_t *j) {
             json_kv_string(j, "cmd", entries[i].cmd);
             json_kv_int(j, "rss_delta_kb", entries[i].rss_delta_kb);
             json_kv_int(j, "heap_delta_kb", entries[i].heap_rss_delta_kb);
+            json_kv_int(j, "heap_pd_delta_kb", entries[i].heap_pd_delta_kb);
             json_kv_int(j, "heap_size_kb", entries[i].heap_size_kb);
             json_object_end(j);
         }

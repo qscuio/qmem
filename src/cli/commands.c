@@ -384,6 +384,46 @@ int cmd_top(const char *socket_path) {
         pos++;
     }
     
+
+    
+    /* Find top_rss section */
+    const char *top_rss = strstr(procmem, "\"top_rss\":");
+    if (top_rss) {
+        printf("\n" CYAN "=== Top Memory Usage (Absolute) ===" NC "\n");
+        printf("%-8s %-12s %-12s %s\n", "PID", "RSS", "Data", "Command");
+        
+        const char *pos = strchr(top_rss, '[');
+        if (pos) {
+            while ((pos = strstr(pos, "{\"pid\":")) != NULL) {
+                int64_t pid = json_get_int(pos, "pid");
+                int64_t rss = json_get_int(pos, "rss_kb");
+                int64_t data = json_get_int(pos, "data_kb");
+                
+                /* Extract cmd */
+                const char *cmd_pos = strstr(pos, "\"cmd\":\"");
+                char cmd[64] = "unknown";
+                if (cmd_pos) {
+                    cmd_pos += 7;
+                    const char *end = strchr(cmd_pos, '"');
+                    if (end) {
+                        size_t len = end - cmd_pos;
+                        if (len > 63) len = 63;
+                        strncpy(cmd, cmd_pos, len);
+                        cmd[len] = '\0';
+                    }
+                }
+                
+                char rss_buf[32], data_buf[32];
+                format_kb(rss_buf, sizeof(rss_buf), rss);
+                format_kb(data_buf, sizeof(data_buf), data);
+                
+                printf("%-8ld %-12s %-12s %.40s\n", (long)pid, rss_buf, data_buf, cmd);
+                
+                pos++;
+            }
+        }
+    }
+    
     return 0;
 }
 

@@ -22,5 +22,6 @@ typedef struct {
 /* Get top N RSS growers/shrinkers */
 int procmem_get_top_growers(procmem_entry_t *entries, int max_entries);
 int procmem_get_top_shrinkers(procmem_entry_t *entries, int max_entries);
+int procmem_get_top_rss(procmem_entry_t *entries, int max_entries);
 
 #endif /* QMEM_PROCMEM_H */
