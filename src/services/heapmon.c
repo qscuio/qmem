@@ -304,10 +304,25 @@ int heapmon_get_top_consumers(heapmon_entry_t *entries, int max_entries) {
         e->heap_rss_kb = cur->heap_rss_kb;
         e->heap_private_dirty_kb = cur->heap_pd_kb;
         
-        /* Deltas (0 if no previous) */
+        /* Deltas */
         e->heap_rss_delta_kb = 0;
         e->heap_pd_delta_kb = 0;
         e->rss_delta_kb = 0;
+        
+        /* Find in previous */
+        for (int k = 0; k < priv->previous_count; k++) {
+            if (priv->previous[k].pid == cur->pid) {
+                e->heap_rss_delta_kb = cur->heap_rss_kb - priv->previous[k].heap_rss_kb;
+                e->heap_pd_delta_kb = cur->heap_pd_kb - priv->previous[k].heap_pd_kb;
+                /* Note: rss_delta requires procmem history which we don't have here easily, 
+                   but we can use procmem_get_pid_info's delta if available? 
+                   Actually procmem_get_pid_info fills rss_delta_kb. Use it. */
+                if (procmem_get_pid_info(cur->pid, &pe) == 0) {
+                    e->rss_delta_kb = pe.rss_delta_kb;
+                }
+                break;
+            }
+        }
     }
     
     qsort(all_entries, count, sizeof(heapmon_entry_t), compare_consumers);

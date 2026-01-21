@@ -261,7 +261,16 @@ int slabinfo_get_top_consumers(slab_entry_t *entries, int max_entries) {
         slab_entry_t *e = &all_entries[count++];
         snprintf(e->name, sizeof(e->name), "%s", cur->name);
         e->size_bytes = cur->size_bytes;
-        e->delta_bytes = 0; /* Total view doesn't emphasize delta */
+        e->delta_bytes = 0;
+        
+        /* Calc delta */
+        if (priv->has_previous) {
+            slab_cache_info_t *prev = find_slab(priv->previous, priv->previous_count, cur->name);
+            if (prev) {
+                 e->delta_bytes = cur->size_bytes - prev->size_bytes;
+            }
+        }
+
         e->num_objs = cur->num_objs;
         e->obj_size = cur->obj_size;
     }

@@ -14,6 +14,7 @@
 #define GREEN   "\033[0;32m"
 #define YELLOW  "\033[1;33m"
 #define CYAN    "\033[0;36m"
+#define BOLD    "\033[1m"
 #define NC      "\033[0m"
 
 /* Simple JSON value extraction (no external dependency) */
@@ -130,12 +131,146 @@ static void print_json_section(const char *json, const char *key) {
     }
 }
 
+int cmd_memleak(const char *socket_path) {
+    char *response = client_get_snapshot(socket_path);
+    if (!response) {
+        fprintf(stderr, "Error: Cannot connect to daemon at %s\n", socket_path);
+        return 1;
+    }
+
+    printf("\n" CYAN "=== Memory Leak / Usage Report ===" NC "\n\n");
+    const char *memleak = strstr(response, "\"memleak\":");
+    if (!memleak) {
+        printf("Service 'memleak' data not found.\n");
+        free(response);
+        return 0;
+    }
+
+    /* Helper macro for table headers */
+#define HEADER_PROC "%-8s %-16s %-12s %-12s %-12s %-12s %-12s"
+#define ROWS_PROC   "%-8ld %-16s %-12s %-12s %-12s %-12s %-12s"
+#define HEADER_SLAB "%-24s %-12s %-12s %-12s"
+#define ROWS_SLAB   "%-24s %-12s %-12s %-12ld"
+
+    /* 1. Process Usage */
+    const char *proc_usage = strstr(memleak, "\"process_usage\":");
+    if (proc_usage) {
+        printf(BOLD "Top Process Memory (Absolute)" NC "\n");
+        printf(HEADER_PROC "\n", "PID", "Command", "Total RSS", "Delta", "Heap RSS", "Delta", "Heap Size");
+        print_separator();
+        
+        const char *pos = strchr(proc_usage, '[');
+        int count = 0;
+        while (pos && (pos = strstr(pos, "{\"pid\":")) != NULL) {
+             /* Parse fields */
+             int64_t pid = json_get_int(pos, "pid");
+             
+             char cmd[64] = "unknown";
+             const char *cmd_pos = strstr(pos, "\"cmd\":\"");
+             if (cmd_pos) {
+                 cmd_pos += 7;
+                 const char *end = strchr(cmd_pos, '"');
+                 if (end) {
+                     int len = end - cmd_pos;
+                     if (len > 63) len = 63;
+                     snprintf(cmd, sizeof(cmd), "%.*s", len, cmd_pos);
+                 }
+             }
+
+             int64_t rss = json_get_int(pos, "rss_kb");
+             int64_t rss_delta = json_get_int(pos, "rss_delta_kb");
+             int64_t heap = json_get_int(pos, "heap_rss_kb");
+             int64_t heap_delta = json_get_int(pos, "heap_delta_kb");
+             int64_t heap_size = json_get_int(pos, "heap_size_kb");
+
+             char s_rss[32], s_rss_d[32], s_heap[32], s_heap_d[32], s_size[32];
+             format_kb(s_rss, sizeof(s_rss), rss);
+             format_delta(s_rss_d, sizeof(s_rss_d), rss_delta);
+             format_kb(s_heap, sizeof(s_heap), heap);
+             format_delta(s_heap_d, sizeof(s_heap_d), heap_delta);
+             format_kb(s_size, sizeof(s_size), heap_size);
+
+             printf(ROWS_PROC "\n", pid, cmd, s_rss, s_rss_d, s_heap, s_heap_d, s_size);
+             
+             pos++;
+             count++;
+        }
+        if (count == 0) printf("(No process data available)\n");
+        printf("\n");
+    }
+
+    /* 2. Kernel Usage */
+    const char *kern_usage = strstr(memleak, "\"kernel_usage\":");
+    if (kern_usage) {
+        printf(BOLD "Top Slab Cache (Absolute)" NC "\n");
+        printf(HEADER_SLAB "\n", "Cache Name", "Total Size", "Delta", "Objects");
+        print_separator();
+        
+        const char *pos = strchr(kern_usage, '[');
+        int count = 0;
+        while (pos && (pos = strstr(pos, "{\"cache\":")) != NULL) {
+             char cache[64] = "unknown";
+             const char *c_pos = strstr(pos, "\"cache\":\"");
+             if (c_pos) {
+                 c_pos += 9;
+                 const char *end = strchr(c_pos, '"');
+                 if (end) {
+                     int len = end - c_pos;
+                     if (len > 63) len = 63;
+                     snprintf(cache, sizeof(cache), "%.*s", len, c_pos);
+                 }
+             }
+
+             int64_t total = json_get_int(pos, "total_bytes");
+             int64_t delta = json_get_int(pos, "delta_bytes");
+             int64_t objs = json_get_int(pos, "active_objs");
+
+             char s_total[32], s_delta[32];
+             /* format_kb handles KB. For bytes, we might want MB/KB auto logic but format_kb takes KB input. */
+             /* Convert bytes to KB for format_kb */
+             format_kb(s_total, sizeof(s_total), total / 1024);
+             format_delta(s_delta, sizeof(s_delta), delta / 1024);
+
+             printf(ROWS_SLAB "\n", cache, s_total, s_delta, objs);
+             
+             pos++;
+             count++;
+        }
+        if (count == 0) printf("(No slab data available)\n");
+        printf("\n");
+    }
+
+    /* 3. Leaks (Optional - only if non-empty?) 
+       User output shows empty. We can show them to confirm "Clean". */
+    const char *u_leaks = strstr(memleak, "\"user_leaks\":");
+    if (u_leaks) {
+        /* check if empty */
+        const char *bracket = strchr(u_leaks, '[');
+        if (bracket && strstr(bracket, "{\"pid\":")) {
+             printf(RED BOLD "POSSIBLE USER LEAKS DETECTED!" NC "\n");
+             /* Reuse process format roughly */
+             /* Parse ... */
+             /* For brevity, I'll just note them if user wants full leak report. 
+                But user is "still no total usage". 
+                I'll leave leak part simple for now or implement if needed. 
+                User leaks are "Growth" so already covered by "Top Memory Growers" in `top` command?
+                memleak algorithm is more advanced (heap scan).
+                I'll print a summary line. */
+             printf("(Run 'qmemctl watch memleak' for detailed leak list if any)\n\n");
+        }
+    }
+
+    free(response);
+    return 0;
+}
+
 int cmd_status(const char *socket_path, const char *target) {
     if (target) {
         /* Delegate to specific commands if available */
         if (strcmp(target, "sockets") == 0 || strcmp(target, "sockstat") == 0) return cmd_sockets(socket_path);
         if (strcmp(target, "top") == 0 || strcmp(target, "procmem") == 0) return cmd_top(socket_path);
         if (strcmp(target, "slab") == 0 || strcmp(target, "slabinfo") == 0) return cmd_slab(socket_path);
+        if (strcmp(target, "memleak") == 0) return cmd_memleak(socket_path);
         if (strcmp(target, "list") == 0 || strcmp(target, "services") == 0) return cmd_services(socket_path);
     }
 
