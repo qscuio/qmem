@@ -20,6 +20,9 @@ typedef struct {
     int64_t rss_delta_kb;           /* From procmem */
     int64_t heap_rss_delta_kb;
     int64_t heap_pd_delta_kb;
+    /* Initial/baseline values (when process was first tracked) */
+    int64_t initial_rss_kb;
+    int64_t initial_heap_rss_kb;
 } heapmon_entry_t;
 
 /* Set top RSS growers to scan (called by procmem) */

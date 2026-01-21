@@ -32,6 +32,10 @@ typedef struct {
     int previous_count;
     bool has_previous;
     
+    /* Initial/baseline heap data (first seen values) */
+    heap_data_t initial[MAX_TARGETS * 4]; /* Larger pool for history */
+    int initial_count;
+    
     /* Results */
     heapmon_entry_t results[MAX_TARGETS];
     int result_count;
@@ -100,6 +104,29 @@ static heap_data_t *find_previous(heapmon_priv_t *priv, pid_t pid) {
             return &priv->previous[i];
         }
     }
+    return NULL;
+}
+
+/* Find or create initial (baseline) entry for a PID */
+static heap_data_t *find_or_create_initial(heapmon_priv_t *priv, pid_t pid,
+                                            int64_t size_kb, int64_t rss_kb, int64_t pd_kb) {
+    /* Search for existing entry */
+    for (int i = 0; i < priv->initial_count; i++) {
+        if (priv->initial[i].pid == pid) {
+            return &priv->initial[i];
+        }
+    }
+    
+    /* Not found - create new baseline entry */
+    if (priv->initial_count < MAX_TARGETS * 4) {
+        heap_data_t *init = &priv->initial[priv->initial_count++];
+        init->pid = pid;
+        init->heap_size_kb = size_kb;
+        init->heap_rss_kb = rss_kb;
+        init->heap_pd_kb = pd_kb;
+        return init;
+    }
+    
     return NULL;
 }
 
@@ -193,6 +220,22 @@ static int heapmon_collect(qmem_service_t *svc) {
             res->rss_kb = pe.rss_kb;
             res->rss_delta_kb = pe.rss_delta_kb;
         }
+        
+        /* Get or create initial baseline */
+        heap_data_t *init = find_or_create_initial(priv, pid, size_kb, rss_kb, pd_kb);
+        if (init) {
+            res->initial_heap_rss_kb = init->heap_rss_kb;
+            res->initial_rss_kb = res->rss_kb; /* Will be set on first collect */
+            /* For initial RSS, we need to track it in initial struct as well */
+            /* Use a simple heuristic: if init->heap_pd_kb == 0, it's new, store rss */
+            if (init->heap_pd_kb == pd_kb && init->heap_rss_kb == rss_kb) {
+                /* First time seeing this - initial values are same as current */
+                res->initial_rss_kb = res->rss_kb;
+            }
+        } else {
+            res->initial_heap_rss_kb = rss_kb;
+            res->initial_rss_kb = res->rss_kb;
+        }
     }
     
     /* Clear targets for next round */
@@ -218,8 +261,10 @@ static int heapmon_snapshot(qmem_service_t *svc, json_builder_t *j) {
 
         json_kv_int(j, "rss_kb", e->rss_kb);
         json_kv_int(j, "rss_delta_kb", e->rss_delta_kb);
+        json_kv_int(j, "initial_rss_kb", e->initial_rss_kb);
         json_kv_int(j, "heap_size_kb", e->heap_size_kb);
         json_kv_int(j, "heap_rss_kb", e->heap_rss_kb);
+        json_kv_int(j, "initial_heap_rss_kb", e->initial_heap_rss_kb);
         json_kv_int(j, "heap_pd_kb", e->heap_private_dirty_kb);
         json_kv_int(j, "heap_rss_delta_kb", e->heap_rss_delta_kb);
         json_kv_int(j, "heap_pd_delta_kb", e->heap_pd_delta_kb);

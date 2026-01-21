@@ -164,8 +164,8 @@ int cmd_memleak(const char *socket_path) {
     }
 
     /* Helper macro for table headers */
-#define HEADER_PROC "%-8s %-12s %-12s %-12s %-12s %-12s %s"
-#define ROWS_PROC   "%-8ld %-12s %-12s %-12s %-12s %-12s %s"
+#define HEADER_PROC "%-8s %-12s %-12s %-12s %-12s %-12s %-12s %-12s %s"
+#define ROWS_PROC   "%-8ld %-12s %-12s %-12s %-12s %-12s %-12s %-12s %s"
 #define HEADER_SLAB "%-24s %-12s %-12s %-12s"
 #define ROWS_SLAB   "%-24s %-12s %-12s %-12ld"
 
@@ -173,7 +173,7 @@ int cmd_memleak(const char *socket_path) {
     const char *proc_usage = strstr(memleak, "\"process_usage\":");
     if (proc_usage) {
         printf(BOLD "Top Process Memory (Absolute)" NC "\n");
-        printf(HEADER_PROC "\n", "PID", "Total RSS", "Delta", "Heap RSS", "Delta", "Heap Size", "Command");
+        printf(HEADER_PROC "\n", "PID", "Total RSS", "Initial", "Change", "Heap RSS", "Initial", "Change", "Heap Size", "Command");
         print_separator();
         
         const char *pos = strchr(proc_usage, '[');
@@ -195,19 +195,26 @@ int cmd_memleak(const char *socket_path) {
              }
 
              int64_t rss = json_get_int(pos, "rss_kb");
-             int64_t rss_delta = json_get_int(pos, "rss_delta_kb");
+             int64_t initial_rss = json_get_int(pos, "initial_rss_kb");
              int64_t heap = json_get_int(pos, "heap_rss_kb");
-             int64_t heap_delta = json_get_int(pos, "heap_delta_kb");
+             int64_t initial_heap = json_get_int(pos, "initial_heap_rss_kb");
              int64_t heap_size = json_get_int(pos, "heap_size_kb");
+             
+             /* Calculate total change from initial */
+             int64_t rss_change = rss - initial_rss;
+             int64_t heap_change = heap - initial_heap;
 
-             char s_rss[32], s_rss_d[32], s_heap[32], s_heap_d[32], s_size[32];
+             char s_rss[32], s_init_rss[32], s_rss_chg[32];
+             char s_heap[32], s_init_heap[32], s_heap_chg[32], s_size[32];
              format_kb(s_rss, sizeof(s_rss), rss);
-             format_delta(s_rss_d, sizeof(s_rss_d), rss_delta);
+             format_kb(s_init_rss, sizeof(s_init_rss), initial_rss);
+             format_delta(s_rss_chg, sizeof(s_rss_chg), rss_change);
              format_kb(s_heap, sizeof(s_heap), heap);
-             format_delta(s_heap_d, sizeof(s_heap_d), heap_delta);
+             format_kb(s_init_heap, sizeof(s_init_heap), initial_heap);
+             format_delta(s_heap_chg, sizeof(s_heap_chg), heap_change);
              format_kb(s_size, sizeof(s_size), heap_size);
 
-             printf(ROWS_PROC "\n", pid, s_rss, s_rss_d, s_heap, s_heap_d, s_size, cmd);
+             printf(ROWS_PROC "\n", pid, s_rss, s_init_rss, s_rss_chg, s_heap, s_init_heap, s_heap_chg, s_size, cmd);
              
              pos++;
              count++;
