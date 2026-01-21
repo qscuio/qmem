@@ -22,13 +22,13 @@ static void print_usage(const char *prog) {
     printf("  raw       Dump raw JSON snapshot\n");
     printf("\nOptions:\n");
     printf("  -s, --socket PATH   Unix socket path (default: %s)\n", DEFAULT_SOCKET);
-    printf("  -i, --interval SEC  Watch interval in seconds (default: 2)\n");
+    printf("  -i, --interval SEC  Watch interval in seconds (default: 2, memleak: 10)\n");
     printf("  -h, --help          Show this help\n");
 }
 
 int main(int argc, char **argv) {
     const char *socket_path = DEFAULT_SOCKET;
-    int interval = 2;
+    int interval = 0;
     
     static struct option long_options[] = {
         {"socket",   required_argument, 0, 's'},
@@ -90,6 +90,10 @@ int main(int argc, char **argv) {
                 return cmd_services(socket_path);
             }
             target = argv[optind + 1];
+        }
+        if (interval == 0) {
+            if (target && strcmp(target, "memleak") == 0) interval = 10;
+            else interval = 2;
         }
         return cmd_watch(socket_path, interval, target);
     } else if (strcmp(command, "raw") == 0) {

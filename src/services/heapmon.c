@@ -111,8 +111,8 @@ static int heapmon_collect(qmem_service_t *svc) {
     priv->previous_count = priv->current_count;
     
     /* If no targets set, get them from procmem */
-    /* If no targets set, get them from procmem (Growers AND Top RSS) */
-    if (priv->target_count == 0) {
+    /* Always refresh targets from procmem to catch new top consumers */
+    {
         /* 1. Get Top Growers */
         procmem_entry_t growers[MAX_TARGETS];
         int n_growers = procmem_get_top_growers(growers, MAX_TARGETS / 2);
