@@ -9,6 +9,16 @@
 /* Access the meminfo service */
 extern qmem_service_t meminfo_service;
 
+typedef struct {
+    int64_t total_kb;
+    int64_t free_kb;
+    int64_t available_kb;
+    int64_t buffers_kb;
+    int64_t cached_kb;
+} meminfo_status_t;
+
+int meminfo_get_status(meminfo_status_t *status);
+
 /* Meminfo snapshot data (for direct access) */
 typedef struct {
     int64_t mem_total_kb;

@@ -163,8 +163,20 @@ qmem_service_t meminfo_service = {
     .collect_count = 0,
 };
 
+#ifndef NO_PLUGIN_DEFINE
 QMEM_PLUGIN_DEFINE("meminfo", "1.0", "System memory usage monitor", meminfo_service);
+#endif
 
+int meminfo_get_status(meminfo_status_t *status) {
+    if (!status) return -1;
+    meminfo_priv_t *priv = &g_meminfo;
+    status->total_kb = priv->current.mem_total_kb;
+    status->free_kb = priv->current.mem_free_kb;
+    status->available_kb = priv->current.mem_available_kb;
+    status->buffers_kb = priv->current.buffers_kb;
+    status->cached_kb = priv->current.cached_kb;
+    return 0;
+}
 const meminfo_data_t *meminfo_get_current(void) {
     return &g_meminfo.current;
 }

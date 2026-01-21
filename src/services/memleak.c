@@ -8,6 +8,7 @@
 #include "services/procmem.h"
 #include "services/slabinfo.h"
 #include "services/heapmon.h"
+#include "services/meminfo.h"
 #include <qmem/plugin.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -29,6 +30,7 @@ static int memleak_init(qmem_service_t *svc, const qmem_config_t *cfg) {
     if (procmem_service.ops->init) procmem_service.ops->init(&procmem_service, cfg);
     if (slabinfo_service.ops->init) slabinfo_service.ops->init(&slabinfo_service, cfg);
     if (heapmon_service.ops->init) heapmon_service.ops->init(&heapmon_service, cfg);
+    if (meminfo_service.ops->init) meminfo_service.ops->init(&meminfo_service, cfg);
     
     log_debug("memleak service initialized (unifying procmem, slabinfo, heapmon)");
     return 0;
@@ -41,6 +43,7 @@ static int memleak_collect(qmem_service_t *svc) {
     if (procmem_service.ops->collect) procmem_service.ops->collect(&procmem_service);
     if (slabinfo_service.ops->collect) slabinfo_service.ops->collect(&slabinfo_service);
     if (heapmon_service.ops->collect) heapmon_service.ops->collect(&heapmon_service);
+    if (meminfo_service.ops->collect) meminfo_service.ops->collect(&meminfo_service);
     
     return 0;
 }
@@ -50,6 +53,18 @@ static int memleak_snapshot(qmem_service_t *svc, json_builder_t *j) {
     
     json_object_start(j);
     
+    /* Global Memory Summary */
+    meminfo_status_t mem_stat;
+    if (meminfo_get_status(&mem_stat) == 0) {
+        json_key(j, "memory_summary");
+        json_object_start(j);
+        json_kv_int(j, "total_kb", mem_stat.total_kb);
+        json_kv_int(j, "free_kb", mem_stat.free_kb);
+        json_kv_int(j, "available_kb", mem_stat.available_kb);
+        json_kv_int(j, "cached_kb", mem_stat.cached_kb);
+        json_object_end(j);
+    }
+
     /* Kernel Leaks (Slab) */
     json_key(j, "kernel_leaks");
     json_array_start(j);

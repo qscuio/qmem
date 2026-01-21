@@ -97,12 +97,16 @@ $(BUILDDIR)/services/slabinfo_noplugin.o: $(SRCDIR)/services/slabinfo.c
 $(BUILDDIR)/services/heapmon_noplugin.o: $(SRCDIR)/services/heapmon.c
 	$(CC) $(CFLAGS) -DNO_PLUGIN_DEFINE -fPIC -c -o $@ $<
 
+# Meminfo object without plugin define
+$(BUILDDIR)/services/meminfo_noplugin.o: $(SRCDIR)/services/meminfo.c
+	$(CC) $(CFLAGS) -DNO_PLUGIN_DEFINE -fPIC -c -o $@ $<
+
 # Heapmon needs procmem functions
 $(PLUGINDIR)/heapmon.so: $(SRCDIR)/services/heapmon.c $(BUILDDIR)/services/procmem_noplugin.o $(COMMON_OBJS)
 	$(CC) $(CFLAGS) -fPIC -shared -o $@ $^ $(LDFLAGS)
 
-# Memleak needs procmem, slabinfo, heapmon
-$(PLUGINDIR)/memleak.so: $(SRCDIR)/services/memleak.c $(BUILDDIR)/services/procmem_noplugin.o $(BUILDDIR)/services/slabinfo_noplugin.o $(BUILDDIR)/services/heapmon_noplugin.o $(COMMON_OBJS)
+# Memleak needs procmem, slabinfo, heapmon, meminfo
+$(PLUGINDIR)/memleak.so: $(SRCDIR)/services/memleak.c $(BUILDDIR)/services/procmem_noplugin.o $(BUILDDIR)/services/slabinfo_noplugin.o $(BUILDDIR)/services/heapmon_noplugin.o $(BUILDDIR)/services/meminfo_noplugin.o $(COMMON_OBJS)
 	$(CC) $(CFLAGS) -fPIC -shared -o $@ $^ $(LDFLAGS)
 
 clean:

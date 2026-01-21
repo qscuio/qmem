@@ -146,6 +146,23 @@ int cmd_memleak(const char *socket_path) {
         return 0;
     }
 
+    /* 0. Global Summary */
+    const char *mem_sum = strstr(memleak, "\"memory_summary\":");
+    if (mem_sum) {
+        int64_t total = json_get_int(mem_sum, "total_kb");
+        int64_t avail = json_get_int(mem_sum, "available_kb");
+        int64_t free_kb = json_get_int(mem_sum, "free_kb");
+        int64_t cached = json_get_int(mem_sum, "cached_kb");
+        int64_t used = total - free_kb - cached; /* Rough used approximation */
+        
+        char s_total[32], s_used[32], s_avail[32];
+        format_kb(s_total, sizeof(s_total), total);
+        format_kb(s_used, sizeof(s_used), used);
+        format_kb(s_avail, sizeof(s_avail), avail);
+        
+        printf(BOLD "System Memory:" NC " Total: %s  Used: %s  Available: %s\n\n", s_total, s_used, s_avail);
+    }
+
     /* Helper macro for table headers */
 #define HEADER_PROC "%-8s %-16s %-12s %-12s %-12s %-12s %-12s"
 #define ROWS_PROC   "%-8ld %-16s %-12s %-12s %-12s %-12s %-12s"
