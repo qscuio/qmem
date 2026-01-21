@@ -148,6 +148,7 @@ static int slabinfo_collect(qmem_service_t *svc) {
                     e->size_bytes = cur->size_bytes;
                     e->delta_bytes = delta;
                     e->num_objs = cur->num_objs;
+                    e->delta_objs = cur->num_objs - prev->num_objs;
                     e->obj_size = cur->obj_size;
                 }
             }
@@ -190,6 +191,7 @@ static int slabinfo_snapshot(qmem_service_t *svc, json_builder_t *j) {
         json_kv_int(j, "size_bytes", e->size_bytes);
         json_kv_int(j, "delta_bytes", e->delta_bytes);
         json_kv_int(j, "num_objs", e->num_objs);
+        json_kv_int(j, "delta_objs", e->delta_objs);
         json_kv_int(j, "obj_size", e->obj_size);
         json_object_end(j);
     }
@@ -204,6 +206,7 @@ static int slabinfo_snapshot(qmem_service_t *svc, json_builder_t *j) {
         json_kv_int(j, "size_bytes", e->size_bytes);
         json_kv_int(j, "delta_bytes", e->delta_bytes);
         json_kv_int(j, "num_objs", e->num_objs);
+        json_kv_int(j, "delta_objs", e->delta_objs);
         json_kv_int(j, "obj_size", e->obj_size);
         json_object_end(j);
     }
@@ -262,12 +265,14 @@ int slabinfo_get_top_consumers(slab_entry_t *entries, int max_entries) {
         snprintf(e->name, sizeof(e->name), "%s", cur->name);
         e->size_bytes = cur->size_bytes;
         e->delta_bytes = 0;
+        e->delta_objs = 0;
         
         /* Calc delta */
         if (priv->has_previous) {
             slab_cache_info_t *prev = find_slab(priv->previous, priv->previous_count, cur->name);
             if (prev) {
                  e->delta_bytes = cur->size_bytes - prev->size_bytes;
+                 e->delta_objs = cur->num_objs - prev->num_objs;
             }
         }
 

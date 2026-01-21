@@ -14,6 +14,7 @@ typedef struct {
     int64_t size_bytes;
     int64_t delta_bytes;
     int32_t num_objs;
+    int32_t delta_objs;  /* Change in object count */
     int32_t obj_size;
 } slab_entry_t;
 

@@ -259,7 +259,7 @@ int cmd_memleak(const char *socket_path) {
     const char *kern_usage = strstr(memleak, "\"kernel_usage\":");
     if (kern_usage) {
         printf(BOLD "Top Slab Cache (Absolute)" NC "\n");
-        printf(HEADER_SLAB "\n", "Cache Name", "Total Size", "Delta", "Objects");
+        printf("%-24s %-12s %-12s %-12s %-12s\n", "Cache Name", "Total Size", "Delta", "Objects", "Obj Delta");
         print_separator();
         
         const char *pos = strchr(kern_usage, '[');
@@ -280,6 +280,7 @@ int cmd_memleak(const char *socket_path) {
              int64_t total = json_get_int(pos, "total_bytes");
              int64_t delta = json_get_int(pos, "delta_bytes");
              int64_t objs = json_get_int(pos, "active_objs");
+             int64_t delta_objs = json_get_int(pos, "delta_objs");
 
              char s_total[32];
              format_kb(s_total, sizeof(s_total), total / 1024);
@@ -287,7 +288,9 @@ int cmd_memleak(const char *socket_path) {
              /* Print with proper alignment */
              printf("%-24s %-12s ", cache, s_total);
              print_delta_col(delta / 1024, 12);
-             printf("%-12ld\n", (long)objs);
+             printf("%-12ld ", (long)objs);
+             print_delta_col(delta_objs, 12);
+             printf("\n");
              
              pos++;
              count++;
