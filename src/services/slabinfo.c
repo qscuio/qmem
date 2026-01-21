@@ -239,6 +239,40 @@ qmem_service_t slabinfo_service = {
 QMEM_PLUGIN_DEFINE("slabinfo", "1.0", "Slab cache monitor", slabinfo_service);
 #endif
 
+static int compare_consumers(const void *a, const void *b) {
+    const slab_entry_t *ea = (const slab_entry_t *)a;
+    const slab_entry_t *eb = (const slab_entry_t *)b;
+    if (eb->size_bytes > ea->size_bytes) return 1;
+    if (eb->size_bytes < ea->size_bytes) return -1;
+    return 0;
+}
+
+int slabinfo_get_top_consumers(slab_entry_t *entries, int max_entries) {
+    slabinfo_priv_t *priv = &g_slabinfo;
+    
+    /* Convert current raw slabs to export format (ignoring 0 size) */
+    slab_entry_t all_entries[MAX_SLABS];
+    int count = 0;
+    
+    for (int i = 0; i < priv->current_count; i++) {
+        slab_cache_info_t *cur = &priv->current[i];
+        if (cur->size_bytes == 0) continue;
+        
+        slab_entry_t *e = &all_entries[count++];
+        snprintf(e->name, sizeof(e->name), "%s", cur->name);
+        e->size_bytes = cur->size_bytes;
+        e->delta_bytes = 0; /* Total view doesn't emphasize delta */
+        e->num_objs = cur->num_objs;
+        e->obj_size = cur->obj_size;
+    }
+    
+    qsort(all_entries, count, sizeof(slab_entry_t), compare_consumers);
+    
+    int n = count > max_entries ? max_entries : count;
+    memcpy(entries, all_entries, n * sizeof(slab_entry_t));
+    return n;
+}
+
 int slabinfo_get_top_growers(slab_entry_t *entries, int max_entries) {
     int n = g_slabinfo.grower_count;
     if (n > max_entries) n = max_entries;

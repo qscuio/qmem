@@ -27,5 +27,6 @@ void heapmon_set_targets(pid_t *pids, int count);
 
 /* Get heap info for scanned processes */
 int heapmon_get_entries(heapmon_entry_t *entries, int max_entries);
+int heapmon_get_top_consumers(heapmon_entry_t *entries, int max_entries);
 
 #endif /* QMEM_HEAPMON_H */

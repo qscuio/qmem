@@ -19,6 +19,7 @@ typedef struct {
 
 /* Get top N growers/shrinkers */
 int slabinfo_get_top_growers(slab_entry_t *entries, int max_entries);
+int slabinfo_get_top_consumers(slab_entry_t *entries, int max_entries);
 int slabinfo_get_top_shrinkers(slab_entry_t *entries, int max_entries);
 
 #endif /* QMEM_SLABINFO_H */

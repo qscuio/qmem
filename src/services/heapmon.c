@@ -7,6 +7,7 @@
 #include "common/proc_utils.h"
 #include <stdio.h>
 #include <stdlib.h>
+#include "services/procmem.h"
 #include <string.h>
 #include <qmem/plugin.h>
 
@@ -110,12 +111,35 @@ static int heapmon_collect(qmem_service_t *svc) {
     priv->previous_count = priv->current_count;
     
     /* If no targets set, get them from procmem */
+    /* If no targets set, get them from procmem (Growers AND Top RSS) */
     if (priv->target_count == 0) {
+        /* 1. Get Top Growers */
         procmem_entry_t growers[MAX_TARGETS];
-        int n = procmem_get_top_growers(growers, MAX_TARGETS);
+        int n_growers = procmem_get_top_growers(growers, MAX_TARGETS / 2);
+        
+        /* 2. Get Top Absolute RSS */
+        procmem_entry_t top_rss[MAX_TARGETS];
+        int n_rss = procmem_get_top_rss(top_rss, MAX_TARGETS / 2);
+
         priv->target_count = 0;
-        for (int i = 0; i < n; i++) {
+        
+        /* Add Growers */
+        for (int i = 0; i < n_growers; i++) {
             priv->targets[priv->target_count++] = growers[i].pid;
+        }
+        
+        /* Add Top RSS (deduplicate) */
+        for (int i = 0; i < n_rss; i++) {
+            bool found = false;
+            for (int k = 0; k < priv->target_count; k++) {
+                if (priv->targets[k] == top_rss[i].pid) {
+                    found = true;
+                    break;
+                }
+            }
+            if (!found && priv->target_count < MAX_TARGETS) {
+                priv->targets[priv->target_count++] = top_rss[i].pid;
+            }
         }
     }
     
@@ -240,6 +264,57 @@ void heapmon_set_targets(pid_t *pids, int count) {
     if (count > MAX_TARGETS) count = MAX_TARGETS;
     g_heapmon.target_count = count;
     memcpy(g_heapmon.targets, pids, count * sizeof(pid_t));
+}
+
+static int compare_consumers(const void *a, const void *b) {
+    const heapmon_entry_t *ea = (const heapmon_entry_t *)a;
+    const heapmon_entry_t *eb = (const heapmon_entry_t *)b;
+    /* Sort by Total Heap RSS first, then Total RSS */
+    if (eb->heap_rss_kb > ea->heap_rss_kb) return 1;
+    if (eb->heap_rss_kb < ea->heap_rss_kb) return -1;
+    if (eb->rss_kb > ea->rss_kb) return 1;
+    if (eb->rss_kb < ea->rss_kb) return -1;
+    return 0;
+}
+
+int heapmon_get_top_consumers(heapmon_entry_t *entries, int max_entries) {
+    heapmon_priv_t *priv = &g_heapmon;
+    
+    /* Convert current raw data to export format */
+    heapmon_entry_t all_entries[MAX_TARGETS];
+    int count = 0;
+    
+    for (int i = 0; i < priv->current_count; i++) {
+        heap_data_t *cur = &priv->current[i];
+        
+        heapmon_entry_t *e = &all_entries[count++];
+        e->pid = cur->pid;
+        
+        /* Find cmd */
+        procmem_entry_t pe;
+        if (procmem_get_pid_info(cur->pid, &pe) == 0) {
+             snprintf(e->cmd, sizeof(e->cmd), "%s", pe.cmd);
+             e->rss_kb = pe.rss_kb;
+        } else {
+             snprintf(e->cmd, sizeof(e->cmd), "(unknown)");
+             e->rss_kb = cur->heap_rss_kb; /* Fallback */
+        }
+        
+        e->heap_size_kb = cur->heap_size_kb;
+        e->heap_rss_kb = cur->heap_rss_kb;
+        e->heap_private_dirty_kb = cur->heap_pd_kb;
+        
+        /* Deltas (0 if no previous) */
+        e->heap_rss_delta_kb = 0;
+        e->heap_pd_delta_kb = 0;
+        e->rss_delta_kb = 0;
+    }
+    
+    qsort(all_entries, count, sizeof(heapmon_entry_t), compare_consumers);
+    
+    int n = count > max_entries ? max_entries : count;
+    memcpy(entries, all_entries, n * sizeof(heapmon_entry_t));
+    return n;
 }
 
 int heapmon_get_entries(heapmon_entry_t *entries, int max_entries) {

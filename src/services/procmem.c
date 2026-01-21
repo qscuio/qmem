@@ -320,3 +320,27 @@ int procmem_get_top_rss(procmem_entry_t *entries, int max_entries) {
     memcpy(entries, g_procmem.top_rss, n * sizeof(procmem_entry_t));
     return n;
 }
+
+int procmem_get_pid_info(pid_t pid, procmem_entry_t *info) {
+    if (!info) return -1;
+    procmem_priv_t *priv = &g_procmem;
+    proc_entry_t *e = find_in_hash(priv->current, pid);
+    if (!e) return -1;
+    
+    info->pid = e->pid;
+    snprintf(info->cmd, sizeof(info->cmd), "%s", e->cmd);
+    info->rss_kb = e->rss_kb;
+    info->data_kb = e->data_kb;
+    
+    /* Calculate delta */
+    info->rss_delta_kb = 0;
+    info->data_delta_kb = 0;
+    if (priv->has_previous) {
+        proc_entry_t *prev = find_in_hash(priv->previous, pid);
+        if (prev) {
+            info->rss_delta_kb = e->rss_kb - prev->rss_kb;
+            info->data_delta_kb = e->data_kb - prev->data_kb;
+        }
+    }
+    return 0;
+}

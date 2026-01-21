@@ -87,6 +87,42 @@ static int memleak_snapshot(qmem_service_t *svc, json_builder_t *j) {
             json_object_end(j);
         }
     }
+
+    json_array_end(j);
+
+    /* Top Process Usage (Absolute) */
+    json_key(j, "process_usage");
+    json_array_start(j);
+    {
+        heapmon_entry_t entries[10];
+        int n = heapmon_get_top_consumers(entries, 10);
+        for (int i = 0; i < n; i++) {
+            json_object_start(j);
+            json_kv_int(j, "pid", entries[i].pid);
+            json_kv_string(j, "cmd", entries[i].cmd);
+            json_kv_int(j, "rss_kb", entries[i].rss_kb);
+            json_kv_int(j, "heap_rss_kb", entries[i].heap_rss_kb);
+            json_kv_int(j, "heap_pd_kb", entries[i].heap_private_dirty_kb);
+            json_kv_int(j, "heap_size_kb", entries[i].heap_size_kb);
+            json_object_end(j);
+        }
+    }
+    json_array_end(j);
+
+    /* Top Kernel Usage (Absolute Slab) */
+    json_key(j, "kernel_usage");
+    json_array_start(j);
+    {
+        slab_entry_t entries[10];
+        int n = slabinfo_get_top_consumers(entries, 10);
+        for (int i = 0; i < n; i++) {
+            json_object_start(j);
+            json_kv_string(j, "cache", entries[i].name);
+            json_kv_int(j, "total_bytes", entries[i].size_bytes);
+            json_kv_int(j, "active_objs", entries[i].num_objs);
+            json_object_end(j);
+        }
+    }
     json_array_end(j);
     
     json_object_end(j);

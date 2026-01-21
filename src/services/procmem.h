@@ -23,5 +23,6 @@ typedef struct {
 int procmem_get_top_growers(procmem_entry_t *entries, int max_entries);
 int procmem_get_top_shrinkers(procmem_entry_t *entries, int max_entries);
 int procmem_get_top_rss(procmem_entry_t *entries, int max_entries);
+int procmem_get_pid_info(pid_t pid, procmem_entry_t *info);
 
 #endif /* QMEM_PROCMEM_H */
