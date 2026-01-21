@@ -15,7 +15,7 @@ int cmd_top(const char *socket_path);
 int cmd_slab(const char *socket_path);
 
 /* Execute watch command (continuous monitoring) */
-int cmd_watch(const char *socket_path, int interval);
+int cmd_watch(const char *socket_path, int interval, const char *target);
 
 /* Execute raw command (dump JSON) */
 int cmd_raw(const char *socket_path);

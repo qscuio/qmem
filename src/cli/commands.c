@@ -439,7 +439,7 @@ int cmd_slab(const char *socket_path) {
     return 0;
 }
 
-int cmd_watch(const char *socket_path, int interval) {
+int cmd_watch(const char *socket_path, int interval, const char *target) {
     printf("Watching memory changes (Ctrl+C to stop)...\n");
     printf("Interval: %d seconds\n\n", interval);
     
@@ -447,9 +447,12 @@ int cmd_watch(const char *socket_path, int interval) {
         /* Clear screen */
         printf("\033[2J\033[H");
         
-        cmd_status(socket_path, NULL);
-        printf("\n");
-        cmd_top(socket_path);
+        cmd_status(socket_path, target);
+        
+        if (!target) {
+            printf("\n");
+            cmd_top(socket_path);
+        }
         
         sleep(interval);
     }
