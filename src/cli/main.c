@@ -13,7 +13,7 @@
 static void print_usage(const char *prog) {
     printf("Usage: %s [options] <command>\n\n", prog);
     printf("Commands:\n");
-    printf("  status    Show current memory status\n");
+    printf("  status [svc] Show current memory status (or specific service)\n");
     printf("  top       Show top memory consumers/growers\n");
     printf("  slab      Show slab cache changes\n");
     printf("  sockets   Show detailed socket connections\n");
@@ -63,13 +63,15 @@ int main(int argc, char **argv) {
     
     if (optind >= argc) {
         /* No command, default to status */
-        return cmd_status(socket_path);
+        return cmd_status(socket_path, NULL);
     }
     
     const char *command = argv[optind];
     
     if (strcmp(command, "status") == 0) {
-        return cmd_status(socket_path);
+        const char *target = NULL;
+        if (optind + 1 < argc) target = argv[optind + 1];
+        return cmd_status(socket_path, target);
     } else if (strcmp(command, "top") == 0) {
         return cmd_top(socket_path);
     } else if (strcmp(command, "slab") == 0) {

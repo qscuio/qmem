@@ -71,11 +71,85 @@ static void print_separator(void) {
     printf("================================================================================\n");
 }
 
-int cmd_status(const char *socket_path) {
+static void print_json_section(const char *json, const char *key) {
+    char search[128];
+    snprintf(search, sizeof(search), "\"%s\":", key);
+    const char *pos = strstr(json, search);
+    
+    if (!pos) {
+        printf("Service '%s' not found or disabled in snapshot.\n", key);
+        return;
+    }
+    
+    printf("\n" CYAN "=== Status: %s ===" NC "\n\n", key);
+    
+    /* Find value start */
+    pos = strchr(pos, ':');
+    if (!pos) return;
+    pos++;
+    while (*pos && isspace(*pos)) pos++;
+    
+    /* Determine end */
+    const char *end = NULL;
+    if (*pos == '{') {
+        int depth = 1;
+        end = pos + 1;
+        while (*end && depth > 0) {
+            if (*end == '{') depth++;
+            else if (*end == '}') depth--;
+            end++;
+        }
+        if (*end) end++;
+    } else if (*pos == '[') {
+        int depth = 1;
+        end = pos + 1;
+        while (*end && depth > 0) {
+            if (*end == '[') depth++;
+            else if (*end == ']') depth--;
+            end++;
+        }
+        if (*end) end++;
+    } else if (*pos == '"') {
+        end = pos + 1;
+        while (*end && *end != '"') {
+             if (*end == '\\') end++;
+             end++;
+        }
+        if (*end) end++;
+    } else {
+        /* Number or boolean */
+        end = pos;
+        while (*end && (isalnum(*end) || *end == '.' || *end == '-')) end++;
+    }
+    
+    if (end) {
+        /* Print formatted JSON if possible using a simple heuristic tool? 
+           For now just raw dump of the section */
+        fwrite(pos, 1, end - pos, stdout);
+        printf("\n");
+    }
+}
+
+int cmd_status(const char *socket_path, const char *target) {
+    if (target) {
+        /* Delegate to specific commands if available */
+        if (strcmp(target, "sockets") == 0 || strcmp(target, "sockstat") == 0) return cmd_sockets(socket_path);
+        if (strcmp(target, "top") == 0 || strcmp(target, "procmem") == 0) return cmd_top(socket_path);
+        if (strcmp(target, "slab") == 0 || strcmp(target, "slabinfo") == 0) return cmd_slab(socket_path);
+        if (strcmp(target, "list") == 0 || strcmp(target, "services") == 0) return cmd_services(socket_path);
+    }
+
     char *response = client_get_snapshot(socket_path);
     if (!response) {
         fprintf(stderr, "Error: Cannot connect to daemon at %s\n", socket_path);
         return 1;
+    }
+    
+    if (target) {
+        /* Generic print for other sections */
+        print_json_section(response, target);
+        free(response);
+        return 0;
     }
     
     /* Parse and display meminfo */
@@ -373,7 +447,7 @@ int cmd_watch(const char *socket_path, int interval) {
         /* Clear screen */
         printf("\033[2J\033[H");
         
-        cmd_status(socket_path);
+        cmd_status(socket_path, NULL);
         printf("\n");
         cmd_top(socket_path);
         

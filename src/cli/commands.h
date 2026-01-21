@@ -4,8 +4,9 @@
 #ifndef QMEM_COMMANDS_H
 #define QMEM_COMMANDS_H
 
-/* Execute status command */
-int cmd_status(const char *socket_path);
+/* Execute status command
+ * target: specific service to show, or NULL for summary */
+int cmd_status(const char *socket_path, const char *target);
 
 /* Execute top command (process list) */
 int cmd_top(const char *socket_path);
