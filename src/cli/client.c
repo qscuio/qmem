@@ -1,6 +1,7 @@
 /*
  * client.c - IPC client implementation
  */
+#define _POSIX_C_SOURCE 200809L
 #include "client.h"
 #include <stdio.h>
 #include <stdlib.h>
@@ -98,7 +99,7 @@ static char *do_request(const char *socket_path, qmem_req_type_t type,
         return NULL;
     }
     
-    return response;
+    return strdup(response);
 }
 
 char *client_get_status(const char *socket_path) {
