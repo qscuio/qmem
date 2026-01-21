@@ -55,7 +55,7 @@ endif
 
 .PHONY: all clean install test dirs plugins
 
-all: dirs $(DAEMON) $(CLI) plugins
+all: dirs $(DAEMON) $(CLI) plugins installer
 
 # Build with plugins as .so files
 plugins: dirs plugin-dirs $(PLUGIN_TARGETS)
