@@ -27,12 +27,6 @@ static void print_usage(const char *prog) {
 }
 
 int main(int argc, char **argv) {
-    /* Check for root privileges */
-    if (geteuid() != 0) {
-        fprintf(stderr, "Error: qmemctl must be run as root\n");
-        return 1;
-    }
-    
     const char *socket_path = DEFAULT_SOCKET;
     int interval = 2;
     
@@ -59,6 +53,12 @@ int main(int argc, char **argv) {
                 print_usage(argv[0]);
                 return 1;
         }
+    }
+
+    /* Check for root privileges */
+    if (geteuid() != 0) {
+        fprintf(stderr, "Error: qmemctl must be run as root\n");
+        return 1;
     }
     
     if (optind >= argc) {
