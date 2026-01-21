@@ -105,10 +105,108 @@ int cmd_status(const char *socket_path) {
                 printf("Available: %s (%s)\n", buf, delta_buf);
             }
         }
-        
-        print_separator();
     }
     
+    /* CPU Load */
+    const char *cpuload = strstr(response, "\"cpuload\":");
+    if (cpuload) {
+        printf("\n" CYAN "=== CPU ===" NC "\n");
+        const char *sys = strstr(cpuload, "\"system\":");
+        if (sys) {
+            double user = json_get_double(sys, "user_percent");
+            double system = json_get_double(sys, "system_percent");
+            double idle = json_get_double(sys, "idle_percent");
+            double iowait = json_get_double(sys, "iowait_percent");
+            printf("User: %.1f%%  System: %.1f%%  Idle: %.1f%%  IOWait: %.1f%%\n",
+                   user, system, idle, iowait);
+        }
+    }
+    
+    /* Network */
+    const char *netstat = strstr(response, "\"netstat\":");
+    if (netstat) {
+        printf("\n" CYAN "=== Network ===" NC "\n");
+        printf("%-10s %12s %12s %10s %10s\n", "Interface", "RX bytes", "TX bytes", "RX rate", "TX rate");
+        
+        const char *ifaces = strstr(netstat, "\"interfaces\":");
+        if (ifaces) {
+            const char *pos = strchr(ifaces, '[');
+            while (pos && (pos = strstr(pos, "{\"name\":")) != NULL) {
+                /* Extract name */
+                const char *name_pos = strstr(pos, "\"name\":\"");
+                char name[32] = "";
+                if (name_pos) {
+                    name_pos += 8;
+                    const char *end = strchr(name_pos, '"');
+                    if (end) {
+                        size_t len = end - name_pos;
+                        if (len > 31) len = 31;
+                        strncpy(name, name_pos, len);
+                        name[len] = '\0';
+                    }
+                }
+                
+                int64_t rx = json_get_int(pos, "rx_bytes");
+                int64_t tx = json_get_int(pos, "tx_bytes");
+                double rx_rate = json_get_double(pos, "rx_rate");
+                double tx_rate = json_get_double(pos, "tx_rate");
+                
+                char rx_buf[32], tx_buf[32];
+                format_kb(rx_buf, sizeof(rx_buf), rx / 1024);
+                format_kb(tx_buf, sizeof(tx_buf), tx / 1024);
+                
+                printf("%-10s %12s %12s %8.1f/s %8.1f/s\n", name, rx_buf, tx_buf, rx_rate, tx_rate);
+                pos++;
+            }
+        }
+    }
+    
+    /* Socket Stats */
+    const char *sockstat = strstr(response, "\"sockstat\":");
+    if (sockstat) {
+        printf("\n" CYAN "=== Sockets ===" NC "\n");
+        const char *tcp = strstr(sockstat, "\"tcp\":");
+        if (tcp) {
+            int64_t total = json_get_int(tcp, "total");
+            int64_t estab = json_get_int(tcp, "established");
+            int64_t tw = json_get_int(tcp, "time_wait");
+            int64_t listen = json_get_int(tcp, "listen");
+            printf("TCP: %ld (ESTAB:%ld TIME_WAIT:%ld LISTEN:%ld)  ",
+                   (long)total, (long)estab, (long)tw, (long)listen);
+        }
+        int64_t udp = json_get_int(sockstat, "udp_total");
+        int64_t unix_sock = json_get_int(sockstat, "unix_total");
+        printf("UDP: %ld  Unix: %ld\n", (long)udp, (long)unix_sock);
+    }
+    
+    /* Process Stats */
+    const char *procstat = strstr(response, "\"procstat\":");
+    if (procstat) {
+        printf("\n" CYAN "=== Processes ===" NC "\n");
+        const char *sum = strstr(procstat, "\"summary\":");
+        if (sum) {
+            int64_t total = json_get_int(sum, "total");
+            int64_t running = json_get_int(sum, "running");
+            int64_t sleeping = json_get_int(sum, "sleeping");
+            int64_t blocked = json_get_int(sum, "blocked");
+            int64_t zombie = json_get_int(sum, "zombie");
+            printf("Total: %ld  Running: %ld  Sleeping: %ld  Blocked: %ld  Zombie: %ld\n",
+                   (long)total, (long)running, (long)sleeping, (long)blocked, (long)zombie);
+        }
+    }
+    
+    /* Process Events */
+    const char *procevent = strstr(response, "\"procevent\":");
+    if (procevent) {
+        const char *counters = strstr(procevent, "\"counters\":");
+        if (counters) {
+            int64_t forks = json_get_int(counters, "forks");
+            int64_t exits = json_get_int(counters, "exits");
+            printf("Events: Forks: %ld  Exits: %ld\n", (long)forks, (long)exits);
+        }
+    }
+    
+    print_separator();
     return 0;
 }
 

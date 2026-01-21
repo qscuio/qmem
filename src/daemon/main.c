@@ -7,8 +7,15 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <unistd.h>
 
 int main(int argc, char **argv) {
+    /* Check for root privileges */
+    if (geteuid() != 0) {
+        fprintf(stderr, "Error: qmemd must be run as root\n");
+        return 1;
+    }
+    
     qmem_config_t config;
     
     /* Initialize with defaults */

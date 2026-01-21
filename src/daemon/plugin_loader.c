@@ -186,10 +186,23 @@ int plugin_loader_reload(const char *path) {
 }
 
 int plugin_loader_load_all(void) {
+    /* Create plugin directory if it doesn't exist */
+    struct stat st;
+    if (stat(g_loader.plugin_dir, &st) < 0) {
+        if (errno == ENOENT) {
+            if (mkdir(g_loader.plugin_dir, 0755) == 0) {
+                log_info("Created plugin directory: %s", g_loader.plugin_dir);
+            } else {
+                log_debug("Cannot create plugin directory %s: %s", 
+                          g_loader.plugin_dir, strerror(errno));
+            }
+        }
+    }
+    
     DIR *dir = opendir(g_loader.plugin_dir);
     if (!dir) {
         if (errno == ENOENT) {
-            log_info("Plugin directory does not exist: %s", g_loader.plugin_dir);
+            log_debug("Plugin directory does not exist: %s", g_loader.plugin_dir);
             return 0;
         }
         log_error("Failed to open plugin directory %s: %s", 
@@ -215,7 +228,9 @@ int plugin_loader_load_all(void) {
     }
     
     closedir(dir);
-    log_info("Loaded %d plugins from %s", loaded, g_loader.plugin_dir);
+    if (loaded > 0) {
+        log_info("Loaded %d plugins from %s", loaded, g_loader.plugin_dir);
+    }
     return loaded;
 }
 

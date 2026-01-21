@@ -6,8 +6,9 @@
 #include <stdlib.h>
 #include <string.h>
 #include <getopt.h>
+#include <unistd.h>
 
-#define DEFAULT_SOCKET "/run/qmem.sock"
+#define DEFAULT_SOCKET "/tmp/qmem.sock"
 
 static void print_usage(const char *prog) {
     printf("Usage: %s [options] <command>\n\n", prog);
@@ -24,6 +25,12 @@ static void print_usage(const char *prog) {
 }
 
 int main(int argc, char **argv) {
+    /* Check for root privileges */
+    if (geteuid() != 0) {
+        fprintf(stderr, "Error: qmemctl must be run as root\n");
+        return 1;
+    }
+    
     const char *socket_path = DEFAULT_SOCKET;
     int interval = 2;
     
