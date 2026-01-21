@@ -13,6 +13,7 @@
 #include <string.h>
 #include <dirent.h>
 #include <ctype.h>
+#include <qmem/plugin.h>
 #include <time.h>
 
 #define MAX_EVENTS 100
@@ -218,6 +219,8 @@ qmem_service_t procevent_service = {
     .enabled = true,
     .collect_count = 0,
 };
+
+QMEM_PLUGIN_DEFINE("procevent", "1.0", "Process event monitor", procevent_service);
 
 const proc_event_counters_t *procevent_get_counters(void) {
     return &g_procevent.counters;

@@ -10,6 +10,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <qmem/plugin.h>
 
 typedef struct {
     sockstat_summary_t summary;
@@ -143,6 +144,8 @@ qmem_service_t sockstat_service = {
     .enabled = true,
     .collect_count = 0,
 };
+
+QMEM_PLUGIN_DEFINE("sockstat", "1.0", "Socket statistics", sockstat_service);
 
 const sockstat_summary_t *sockstat_get_summary(void) {
     return &g_sockstat.summary;
