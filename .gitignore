@@ -8,3 +8,4 @@ qmem_install.sh
 installer_payload/
 payload.tar.gz
 payload.tar.gz
+build.log
