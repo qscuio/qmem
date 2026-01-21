@@ -12,6 +12,7 @@
 #include <sys/wait.h>
 #include <signal.h>
 #include <time.h>
+#include <sys/mman.h>
 
 static volatile int running = 1;
 
@@ -29,25 +30,52 @@ void handle_sig(int sig) {
 
 void do_leak(void) {
     printf("Starting Memory Leak Simulation...\n");
-    printf("- Allocating 1MB every 1 second\n");
+    printf("- Allocating memory every 1 second\n");
+    printf("- Uses BOTH heap (small malloc) AND mmap (large anonymous)\n");
     printf("- Memory is TOUCHED to ensure RSS growth\n");
     printf("- Press Ctrl+C to stop\n\n");
     
-    long total_leaked = 0;
+    long total_heap = 0;
+    long total_mmap = 0;
+    int iteration = 0;
     
     while(running) {
-        size_t size = 1024 * 1024; // 1MB
-        char *p = malloc(size);
-        if (!p) {
-            printf("Malloc failed!\n");
-            break;
+        iteration++;
+        
+        /* Alternate between heap and mmap allocations */
+        if (iteration % 2 == 1) {
+            /* Small malloc allocations - uses heap (brk/sbrk) */
+            /* Allocate 16 x 64KB = 1MB total, but in small chunks */
+            for (int i = 0; i < 16 && running; i++) {
+                size_t size = 64 * 1024; /* 64KB - stays on heap */
+                char *p = malloc(size);
+                if (!p) {
+                    printf("Malloc failed!\n");
+                    break;
+                }
+                memset(p, 0xAA, size);
+                total_heap += size;
+            }
+            printf("[HEAP] Leaked 1MB via malloc. Heap Total: %ld MB\n", 
+                   total_heap / (1024*1024));
+        } else {
+            /* Large mmap allocation - explicit anonymous mapping */
+            size_t size = 1024 * 1024; /* 1MB */
+            void *p = mmap(NULL, size, PROT_READ | PROT_WRITE,
+                          MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+            if (p == MAP_FAILED) {
+                printf("Mmap failed!\n");
+            } else {
+                memset(p, 0xBB, size);
+                total_mmap += size;
+                printf("[MMAP] Leaked 1MB via mmap. Mmap Total: %ld MB\n",
+                       total_mmap / (1024*1024));
+            }
         }
         
-        /* Touch memory to ensure it counts as RSS */
-        memset(p, 0xAA, size);
-        
-        total_leaked += size;
-        printf("Leaked 1MB. Total: %ld MB\n", total_leaked / (1024*1024));
+        printf("       Total leaked: %ld MB (Heap: %ld MB, Mmap: %ld MB)\n",
+               (total_heap + total_mmap) / (1024*1024),
+               total_heap / (1024*1024), total_mmap / (1024*1024));
         
         sleep(1);
     }
