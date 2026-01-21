@@ -8,13 +8,11 @@ TYPE=${1:-debug}
 
 mkdir -p bin
 if [ "$TYPE" == "debug" ]; then
-    mkdir -p installers
-    INSTALLER_NAME="installers/qmem_install_debug.sh"
+    INSTALLER_NAME="bin/qmem_install_debug.sh"
     MAKE_FLAGS="DEBUG=1"
     echo "Building DEBUG Installer for QMem v$VERSION"
 else
-    mkdir -p installers
-    INSTALLER_NAME="installers/qmem_install_release.sh"
+    INSTALLER_NAME="bin/qmem_install_release.sh"
     MAKE_FLAGS=""
     echo "Building RELEASE Installer for QMem v$VERSION"
 fi
@@ -28,11 +26,8 @@ mkdir -p "$PAYLOAD_DIR"/plugins
 mkdir -p "$PAYLOAD_DIR"/config
 mkdir -p "$PAYLOAD_DIR"/systemd
 
-# Build
-echo "Compiling..."
-make clean >/dev/null
-make -j4 $MAKE_FLAGS >> build.log 2>&1
-ls -l bin/ >> build.log 2>&1
+# Build logic moved to Makefile
+# We assume current build is ready in bin/ and plugins/
 
 # Copy files
 cp bin/qmemd "$PAYLOAD_DIR"/bin/

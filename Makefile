@@ -50,7 +50,7 @@ QMEM_TEST_TOOL := $(BINDIR)/qmem_test_tool
 
 .PHONY: all clean install test dirs plugins
 
-all: $(BINDIR)/qmemd $(BINDIR)/qmemctl $(BINDIR)/qmem_test_tool plugins
+all: $(BINDIR)/qmemd $(BINDIR)/qmemctl $(BINDIR)/qmem_test_tool plugins installer_bin
 
 # Daemon objects (include web if enabled, services linked statically for now)
 DAEMON_ALL_OBJS := $(DAEMON_OBJS) $(COMMON_OBJS)
@@ -138,8 +138,25 @@ deb:
 
 # Build self-extracting installer
 installer:
-	./scripts/make_installer.sh release
-	./scripts/make_installer.sh debug
+# Package the current build as an installer
+installer_bin:
+	@echo "Packaging installer for current build (DEBUG=$(DEBUG))..."
+	./scripts/make_installer.sh $(if $(filter 1,$(DEBUG)),debug,release)
+
+# Build BOTH installers (Release then Debug) and preserve them in bin/
+installer:
+	@echo "Building Release Installer..."
+	$(MAKE) clean
+	$(MAKE) all DEBUG=0
+	@# Save release installer
+	@cp $(BINDIR)/qmem_install_release.sh /tmp/qmem_install_release.sh
+	@echo "Building Debug Installer..."
+	$(MAKE) clean
+	$(MAKE) all DEBUG=1
+	@# Restore release installer
+	@mv /tmp/qmem_install_release.sh $(BINDIR)/
+	@echo "Installers generated in $(BINDIR)/:"
+	@ls -l $(BINDIR)/qmem_install_*.sh
 
 # Dependencies (auto-generated)
 -include $(BUILDDIR)/**/*.d

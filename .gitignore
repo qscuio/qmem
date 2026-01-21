@@ -5,7 +5,6 @@ plugins/
 *.so
 .vscode/
 qmem_install.sh
-installers/
 installer_payload/
 payload.tar.gz
 payload.tar.gz
